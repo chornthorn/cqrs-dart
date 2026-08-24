@@ -1,4 +1,4 @@
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/notification/application/commands/send_notification_command.dart';
 import 'package:hello_world/features/notification/domain/events/notification_sent_event.dart';
 import 'package:hello_world/features/notification/infrastructure/notification_repository.dart';

@@ -1,4 +1,4 @@
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:injectable/injectable.dart' hide test;
 import 'package:test/test.dart';
@@ -6,7 +6,7 @@ import 'package:test/test.dart';
 final getIt = GetIt.instance;
 
 void main() {
-  group('DartCqrsPackageModule', () {
+  group('CqrsPackageModule', () {
     setUp(() async {
       await getIt.reset();
     });
@@ -16,7 +16,7 @@ void main() {
     });
 
     test('registers CqrsDispatcher into GetIt through module helper', () async {
-      final module = DartCqrsPackageModule();
+      final module = CqrsPackageModule();
       final helper = GetItHelper(getIt);
       module.init(helper);
 

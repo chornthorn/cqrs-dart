@@ -5,13 +5,13 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes
 import 'dart:async' as _i687;
 
-import 'package:dart_cqrs/src/core/dispatcher.dart' as _i854;
+import 'package:cqrs/src/core/dispatcher.dart' as _i58;
 import 'package:injectable/injectable.dart' as _i526;
 
-class DartCqrsPackageModule extends _i526.MicroPackageModule {
+class CqrsPackageModule extends _i526.MicroPackageModule {
   // initializes the registration of main-scope dependencies inside of GetIt
   @override
   _i687.FutureOr<void> init(_i526.GetItHelper gh) {
-    gh.singleton<_i854.CqrsDispatcher>(() => _i854.CqrsDispatcher());
+    gh.singleton<_i58.CqrsDispatcher>(() => _i58.CqrsDispatcher());
   }
 }

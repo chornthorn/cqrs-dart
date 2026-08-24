@@ -1,4 +1,4 @@
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 
 class NotificationSentEvent extends DomainEvent {
   NotificationSentEvent({

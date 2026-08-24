@@ -1,5 +1,5 @@
 import 'package:injectable/injectable.dart';
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/notification/domain/events/notification_read_event.dart';
 import 'package:hello_world/features/notification/infrastructure/notification_repository.dart';
 

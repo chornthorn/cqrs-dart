@@ -1,12 +1,12 @@
-name: dart_cqrs_workspace
+name: cqrs_workspace
 publish_to: none
-description: Monorepo workspace for dart_cqrs packages and examples.
+description: Monorepo workspace for cqrs packages and examples.
 
 environment:
   sdk: ^3.12.0
 
 workspace:
-  - packages/dart_cqrs
+  - packages/cqrs
   - examples/hello_world
 
 melos:
@@ -18,10 +18,13 @@ melos:
       exec: dart test
       description: Run `dart test` across all packages.
     build:
-      exec: dart run build_runner build
+      exec:
+        command: dart run build_runner build
+        concurrency: 1
+        orderDependents: true
       packageFilters:
         dependsOn: build_runner
-      description: Run `build_runner build` in packages that depend on build_runner.
+      description: Run `build_runner build` ordered by dependencies.
     format:
       run: dart format --output=none --set-exit-if-changed .
       description: Check code formatting.

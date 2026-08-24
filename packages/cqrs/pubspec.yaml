@@ -1,4 +1,4 @@
-name: dart_cqrs
+name: cqrs
 description: CQRS and event-driven architecture for Dart using get_it and injectable.
 version: 1.0.0
 

@@ -1,4 +1,4 @@
-# dart_cqrs
+# cqrs
 
 Monorepo for CQRS and event-driven architecture in Dart using `get_it` and `injectable`.
 
@@ -6,7 +6,7 @@ Monorepo for CQRS and event-driven architecture in Dart using `get_it` and `inje
 
 ```
 ├── packages/
-│   └── dart_cqrs/               # Core CQRS library package
+│   └── cqrs/                    # Core CQRS library package
 └── examples/
     └── hello_world/             # Example host application
 ```

@@ -1,4 +1,4 @@
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/user/domain/events/user_created_event.dart';
 import 'package:hello_world/features/user/infrastructure/user_repository.dart';
 import 'package:injectable/injectable.dart';

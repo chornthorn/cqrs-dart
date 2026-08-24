@@ -1,5 +1,5 @@
 name: hello_world
-description: Sample app showing how to write features against dart_cqrs.
+description: Sample app showing how to write features against cqrs.
 publish_to: none
 version: 1.0.0
 
@@ -9,7 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  dart_cqrs:
+  cqrs:
   get_it: ^9.2.1
   injectable: ^3.0.0
 

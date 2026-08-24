@@ -1,4 +1,4 @@
-import 'package:dart_cqrs/dart_cqrs.dart';
+import 'package:cqrs/cqrs.dart';
 import 'package:get_it/get_it.dart';
 import 'package:hello_world/features/user/application/commands/create_user_command.dart';
 import 'package:hello_world/features/user/domain/events/user_created_event.dart';
