@@ -35,8 +35,6 @@ class CqrsDispatcher {
     }
 
     final handlers = _getIt.getAll<EventHandler<TEvent>>();
-    await Future.wait(
-      handlers.map((handler) => handler.handle(event)),
-    );
+    await Future.wait(handlers.map((handler) => handler.handle(event)));
   }
 }

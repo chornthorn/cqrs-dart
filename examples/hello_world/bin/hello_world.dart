@@ -1,6 +1,6 @@
 import 'package:dart_cqrs/dart_cqrs.dart';
-import 'package:dart_cqrs_example/features/user/user_usecases.dart';
-import 'package:dart_cqrs_example/injection.dart';
+import 'package:hello_world/features/user/user_usecases.dart';
+import 'package:hello_world/injection.dart';
 
 void main() async {
   await configureDependencies();

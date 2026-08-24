@@ -76,26 +76,28 @@ void main() {
     expect(result, 'hello');
   });
 
-  test('dispatchCommand executes the handler and notifies every event listener',
-      () async {
-    final log = <String>[];
-    getIt.registerFactory<CommandHandler<EchoCommand, int>>(
-      () => EchoCommandHandler(getIt<CqrsDispatcher>()),
-    );
-    getIt.registerFactory<EventHandler<EchoedEvent>>(
-      () => RecordingHandler('a', log),
-    );
-    getIt.registerFactory<EventHandler<EchoedEvent>>(
-      () => RecordingHandler('b', log),
-    );
+  test(
+    'dispatchCommand executes the handler and notifies every event listener',
+    () async {
+      final log = <String>[];
+      getIt.registerFactory<CommandHandler<EchoCommand, int>>(
+        () => EchoCommandHandler(getIt<CqrsDispatcher>()),
+      );
+      getIt.registerFactory<EventHandler<EchoedEvent>>(
+        () => RecordingHandler('a', log),
+      );
+      getIt.registerFactory<EventHandler<EchoedEvent>>(
+        () => RecordingHandler('b', log),
+      );
 
-    final result = await getIt<CqrsDispatcher>().dispatchCommand(
-      EchoCommand(7),
-    );
+      final result = await getIt<CqrsDispatcher>().dispatchCommand(
+        EchoCommand(7),
+      );
 
-    expect(result, 7);
-    expect(log, unorderedEquals(['a:7', 'b:7']));
-  });
+      expect(result, 7);
+      expect(log, unorderedEquals(['a:7', 'b:7']));
+    },
+  );
 
   test('publishEvent is a no-op when no handlers are registered', () async {
     await getIt<CqrsDispatcher>().publishEvent(UnusedEvent());
