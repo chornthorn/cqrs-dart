@@ -1,39 +1,87 @@
-<!--
-This README describes the package. If you publish this package to pub.dev,
-this README's contents appear on the landing page for your package.
+# dart_cqrs
 
-For information about how to write a good package README, see the guide for
-[writing package pages](https://dart.dev/tools/pub/writing-package-pages).
+CQRS and event-driven architecture for Dart. This package is shared infrastructure only: contracts, a dispatcher, and GetIt registration. Application features (commands, queries, events, handlers) live in the host app, not in this library.
 
-For general information about developing packages, see the Dart guide for
-[creating packages](https://dart.dev/tools/pub/create-packages)
-and the Flutter guide for
-[developing packages and plugins](https://flutter.dev/to/develop-packages).
--->
+## Purpose
 
-TODO: Put a short description of the package here that helps potential users
-know whether this package might be useful for them.
+Give application code one entry point (`CqrsDispatcher`) for writes, reads, and in-process events. UI and BLoC layers dispatch data objects; they never look up handlers.
 
-## Features
+## Package layout
 
-TODO: List what your package can do. Maybe include images, gifs, or videos.
+| Location | Owns |
+|---|---|
+| `lib/src/core` | `Query`, `Command`, `DomainEvent`, handlers, `CqrsDispatcher` |
+| Host app / `example` | Feature commands, queries, events, and handlers |
 
-## Getting started
+## Prerequisites
 
-TODO: List prerequisites and provide or point to information on how to
-start using the package.
+- Dart SDK `^3.12.0`
+
+## Local Setup
+
+```bash
+dart pub get
+dart run build_runner build
+```
+
+Host apps that use injectable include this package as an external module, then register their own feature handlers:
+
+```dart
+@InjectableInit(
+  allowMultipleRegistrations: true,
+  externalPackageModulesBefore: [
+    ExternalModule(DartCqrsPackageModule),
+  ],
+)
+Future<void> configureDependencies() => getIt.init();
+```
+
+Regenerate DI in the host app after adding or changing `@Injectable` handlers.
 
 ## Usage
 
-TODO: Include short and useful examples for package users. Add longer examples
-to `/example` folder.
-
 ```dart
-const like = 'sample';
+await dispatcher.dispatchCommand(CreateUserCommand('test@example.com'));
+final user = await dispatcher.dispatchQuery(GetUserQuery('USER-123'));
 ```
 
-## Additional information
+Run the sample host app:
 
-TODO: Tell users more about the package: where to find more information, how to
-contribute to the package, how to file issues, what response they can expect
-from the package authors, and more.
+```bash
+cd example
+dart pub get
+dart run build_runner build
+dart run
+```
+
+Expected output:
+
+```text
+--- App Started ---
+Database: Creating user test@example.com
+📊 Tracking analytics for new user USER-123
+📨 Sending welcome email to USER-123
+Queried user: test@example.com
+```
+
+## Running Tests
+
+Library (dispatcher contracts):
+
+```bash
+dart test
+```
+
+Sample app (user feature):
+
+```bash
+cd example && dart test
+```
+
+## Environment Variables
+
+None.
+
+## Deployment
+
+Depend on this library from an application package. Call the host app's `configureDependencies()` once at startup (or `registerCqrs()` if you are not using injectable), then dispatch through `CqrsDispatcher`.

@@ -1,11 +1,14 @@
-name: dart_cqrs
-description: CQRS and event-driven architecture for Dart using get_it and injectable.
+name: dart_cqrs_example
+description: Sample app showing how to write features against dart_cqrs.
+publish_to: none
 version: 1.0.0
 
 environment:
   sdk: ^3.12.0
 
 dependencies:
+  dart_cqrs:
+    path: ../
   get_it: ^8.3.0
   injectable: ^3.0.0
 
