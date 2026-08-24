@@ -7,9 +7,8 @@ import 'injection.config.dart';
 final getIt = GetIt.instance;
 
 @InjectableInit(
+  initializerName: 'bootstrap',
   allowMultipleRegistrations: true,
-  externalPackageModulesBefore: [
-    ExternalModule(DartCqrsPackageModule),
-  ],
+  externalPackageModulesBefore: [ExternalModule(DartCqrsPackageModule)],
 )
-Future<void> configureDependencies() => getIt.init();
+Future<void> configureDependencies() => getIt.bootstrap();

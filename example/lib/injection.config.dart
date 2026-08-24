@@ -16,7 +16,7 @@ import 'package:injectable/injectable.dart' as _i526;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
-  Future<_i174.GetIt> init({
+  Future<_i174.GetIt> bootstrap({
     String? environment,
     _i526.EnvironmentFilter? environmentFilter,
   }) async {

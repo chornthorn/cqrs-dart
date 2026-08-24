@@ -84,4 +84,4 @@ None.
 
 ## Deployment
 
-Depend on this library from an application package. Call the host app's `configureDependencies()` once at startup (or `registerCqrs()` if you are not using injectable), then dispatch through `CqrsDispatcher`.
+Depend on this library from an application package. Call the host app's `configureDependencies()` once at startup, then dispatch through `CqrsDispatcher`.

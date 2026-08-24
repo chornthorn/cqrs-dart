@@ -56,7 +56,8 @@ class RecordingHandler implements EventHandler<EchoedEvent> {
 void main() {
   setUp(() async {
     await getIt.reset();
-    registerCqrs(getIt);
+    getIt.enableRegisteringMultipleInstancesOfOneType();
+    getIt.registerSingleton(CqrsDispatcher());
   });
 
   tearDown(() async {
