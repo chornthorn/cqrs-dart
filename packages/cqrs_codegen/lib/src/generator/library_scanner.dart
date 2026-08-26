@@ -161,13 +161,13 @@ class LibraryScanner {
     if (type is NeverType) return 'Never';
 
     final element = type.element;
-    final isNullable = type.nullabilitySuffix == NullabilitySuffix.question;
+    final isNullable =
+        type.nullabilitySuffix == NullabilitySuffix.question;
     final nullability = isNullable ? '?' : '';
 
     if (element != null) {
       final uri = getLibraryUri(element);
-      final rawName =
-          element.name ?? type.getDisplayString().replaceAll('?', '');
+      final rawName = element.name ?? type.getDisplayString().replaceAll('?', '');
       final alias = uri != null ? importAliases[uri] : null;
       final prefix = (alias != null && uri?.scheme != 'dart') ? '$alias.' : '';
 
@@ -210,14 +210,19 @@ class LibraryScanner {
   }
 
   /// Scans the directory of [targetAsset] using [buildStep], respecting nested
-  /// `@CqrsMicroPackage` boundaries.
+  /// `@CqrsMicroPackage` boundaries when [useMicroPackage] is true, or scanning all
+  /// handlers when [useMicroPackage] is false (monolithic mode).
   Future<ModuleScanResult> scanDirectory({
     required BuildStep buildStep,
     required AssetId targetAsset,
-    required bool isRootCompositor,
+    required bool isMicroPackage,
+    required bool useMicroPackage,
   }) async {
     final targetDirPath = p.dirname(targetAsset.path);
-    final searchGlob = isRootCompositor
+    final bool isRootCompositor = !isMicroPackage && useMicroPackage;
+    final bool isMonolithicRoot = !isMicroPackage && !useMicroPackage;
+
+    final searchGlob = (isRootCompositor || isMonolithicRoot)
         ? Glob('lib/**.dart')
         : Glob('$targetDirPath/**.dart');
 
@@ -225,40 +230,37 @@ class LibraryScanner {
     final excludedDirs = <String>{};
     final discoveredSubModules = <DiscoveredModule>[];
 
-    // 1. Discover all micro-package boundaries
-    for (final asset in allAssets) {
-      if (asset == targetAsset ||
-          asset.path.endsWith('.cqrs.dart') ||
-          asset.path.endsWith('.config.dart') ||
-          asset.path.endsWith('.g.dart')) {
-        continue;
-      }
-
-      try {
-        if (!await buildStep.resolver.isLibrary(asset)) continue;
-        final lib = await buildStep.resolver.libraryFor(asset);
-        final moduleClassName = findMicroPackageModuleClass(lib);
-        if (moduleClassName != null) {
-          final assetDir = p.dirname(asset.path);
-          final cqrsAsset = AssetId(
-            asset.package,
-            asset.path.replaceAll(RegExp(r'\.dart$'), '.cqrs.dart'),
-          );
-          final module = DiscoveredModule(
-            moduleClassName: moduleClassName,
-            assetId: asset,
-            directory: assetDir,
-            packageUri: assetToPackageUri(cqrsAsset),
-          );
-          discoveredSubModules.add(module);
-
-          // If this is not the root compositor and not the current target asset,
-          // exclude its subtree from the parent module's handler scanning.
-          if (!isRootCompositor && assetDir != targetDirPath) {
-            excludedDirs.add(assetDir);
-          }
+    // 1. Discover micro-package boundaries only when micro-packages are active
+    if (isRootCompositor || isMicroPackage) {
+      for (final asset in allAssets) {
+        if (asset == targetAsset ||
+            asset.path.endsWith('.cqrs.dart') ||
+            asset.path.endsWith('.config.dart') ||
+            asset.path.endsWith('.g.dart')) {
+          continue;
         }
-      } catch (_) {}
+
+        try {
+          if (!await buildStep.resolver.isLibrary(asset)) continue;
+          final lib = await buildStep.resolver.libraryFor(asset);
+          final moduleClassName = findMicroPackageModuleClass(lib);
+          if (moduleClassName != null) {
+            final assetDir = p.dirname(asset.path);
+            final module = DiscoveredModule(
+              moduleClassName: moduleClassName,
+              assetId: asset,
+              directory: assetDir,
+              packageUri: assetToPackageUri(asset),
+            );
+            discoveredSubModules.add(module);
+
+            // If this is a feature micro-package, exclude nested sub-package directories
+            if (isMicroPackage && assetDir != targetDirPath) {
+              excludedDirs.add(assetDir);
+            }
+          }
+        } catch (_) {}
+      }
     }
 
     if (isRootCompositor) {
@@ -271,7 +273,8 @@ class LibraryScanner {
 
     discoveredSubModules.clear();
 
-    // 2. Scan handlers only in files belonging to this module's boundary
+    // 2. Scan handlers (in monolithic root mode, scans ALL files without exclusions;
+    // in micro-package mode, scans only files belonging to this module's boundary)
     final handlers = <HandlerInfo>[];
     final typeUris = <Uri>{};
     final visitedClassNames = <String>{};

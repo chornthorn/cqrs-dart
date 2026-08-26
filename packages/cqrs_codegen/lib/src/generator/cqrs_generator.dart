@@ -137,7 +137,8 @@ class CqrsGenerator extends Generator {
     final scanResult = await scanner.scanDirectory(
       buildStep: buildStep,
       targetAsset: buildStep.inputId,
-      isRootCompositor: isRootCompositor,
+      isMicroPackage: isMicroPackage,
+      useMicroPackage: useMicroPackage,
     );
 
     final handlers = scanResult.handlers;

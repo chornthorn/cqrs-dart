@@ -9,7 +9,6 @@
 
 import 'package:cqrs/cqrs.dart' as _i1;
 import 'package:codegen_example/features/billing/billing.dart' as _i2;
-import 'package:codegen_example/features/billing/thorn_demo.dart' as _i3;
 
 /// Generated registration helper for discovered CQRS handlers (AutoRegisterBillingCqrs).
 extension AutoRegisterBillingCqrs on _i1.HandlerRegistry {
@@ -18,14 +17,11 @@ extension AutoRegisterBillingCqrs on _i1.HandlerRegistry {
     chargeBillingCommandHandler,
     _i2.BillingNotificationHandler Function() billingNotificationHandler =
         _i2.BillingNotificationHandler.new,
-    _i3.FooBarEventHandler Function() fooBarEventHandler =
-        _i3.FooBarEventHandler.new,
   }) {
     registerCommand<_i2.ChargeBillingCommand, String>(
       chargeBillingCommandHandler,
     );
     registerEvent<_i2.BillingChargedEvent>(billingNotificationHandler);
-    registerEvent<_i3.FooBarEvent>(fooBarEventHandler);
   }
 }
 
@@ -43,23 +39,18 @@ class BillingCqrsModule extends _i1.CqrsPackageModule {
     chargeBillingCommandHandler,
     _i2.BillingNotificationHandler Function() billingNotificationHandler =
         _i2.BillingNotificationHandler.new,
-    _i3.FooBarEventHandler Function() fooBarEventHandler =
-        _i3.FooBarEventHandler.new,
   }) : _chargeBillingCommandHandler = chargeBillingCommandHandler,
        _billingNotificationHandler = billingNotificationHandler,
-       _fooBarEventHandler = fooBarEventHandler,
        super();
 
   final _i2.ChargeBillingCommandHandler Function() _chargeBillingCommandHandler;
   final _i2.BillingNotificationHandler Function() _billingNotificationHandler;
-  final _i3.FooBarEventHandler Function() _fooBarEventHandler;
 
   @override
   void register(_i1.HandlerRegistry registry) {
     registry.registerBillingHandlers(
       chargeBillingCommandHandler: _chargeBillingCommandHandler,
       billingNotificationHandler: _billingNotificationHandler,
-      fooBarEventHandler: _fooBarEventHandler,
     );
   }
 }
