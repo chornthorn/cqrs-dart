@@ -38,6 +38,15 @@ class CqrsGenerator extends Generator {
         annotated.first.annotation.objectValue.type?.element?.name ?? '';
     final bool isMicroPackage = annotationTypeName == 'CqrsMicroPackage';
 
+    // If this is an individual micro-package, skip generation when root @CqrsInit has disabled micro-packages
+    if (isMicroPackage) {
+      final isGloballyEnabled =
+          await scanner.isMicroPackageGloballyEnabled(buildStep);
+      if (!isGloballyEnabled) {
+        return null;
+      }
+    }
+
     final annotation = annotated.first.annotation;
     final moduleName = annotation.peek('moduleName')?.stringValue;
     final customMethodName = annotation.peek('methodName')?.stringValue;

@@ -51,6 +51,63 @@ class LibraryScanner {
     TypeChecker.typeNamed(CqrsMicroPackage),
   ]);
 
+  static const _initChecker = TypeChecker.typeNamed(CqrsInit);
+
+  /// Checks if an asset is a generated output file that should be skipped during source scanning.
+  static bool _isGenerated(AssetId asset) => asset.path.endsWith('.cqrs.dart');
+
+  /// Checks whether `@CqrsInit` exists in `lib/**.dart` with `useMicroPackage: true`.
+  /// If an `@CqrsInit` exists with `useMicroPackage: false` (or default false),
+  /// returns `false` so individual micro-packages do not generate redundant files.
+  Future<bool> isMicroPackageGloballyEnabled(BuildStep buildStep) async {
+    final allLibAssets =
+        await buildStep.findAssets(Glob('lib/**.dart')).toList();
+    for (final asset in allLibAssets) {
+      if (_isGenerated(asset)) {
+        continue;
+      }
+      try {
+        if (!await buildStep.resolver.isLibrary(asset)) continue;
+        final lib = await buildStep.resolver.libraryFor(asset);
+        final reader = LibraryReader(lib);
+        final initAnnotated = reader.annotatedWith(_initChecker);
+        if (initAnnotated.isNotEmpty) {
+          final ann = initAnnotated.first.annotation;
+          final useMicro = ann.peek('useMicroPackage')?.boolValue ?? false;
+          return useMicro;
+        }
+
+        // Fallback AST inspection for @CqrsInit
+        final session = lib.session;
+        final parsed = session.getParsedLibraryByElement(lib);
+        if (parsed is ParsedLibraryResult) {
+          for (final unit in parsed.units) {
+            for (final decl in unit.unit.declarations) {
+              for (final meta in decl.metadata) {
+                if (meta.name.name == 'CqrsInit') {
+                  final args = meta.arguments?.arguments;
+                  if (args != null) {
+                    for (final arg in args) {
+                      if (arg is NamedArgument &&
+                          arg.name.lexeme == 'useMicroPackage') {
+                        final expr = arg.argumentExpression;
+                        if (expr is BooleanLiteral) {
+                          return expr.value;
+                        }
+                      }
+                    }
+                  }
+                  return false;
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return true; // If no @CqrsInit is found, allow standalone micro-package generation
+  }
+
   /// Extracts the module class name from an annotated [LibraryElement] or AST.
   String? findMicroPackageModuleClass(LibraryElement lib) {
     // 1. Try via source_gen TypeChecker
@@ -233,10 +290,7 @@ class LibraryScanner {
     // 1. Discover micro-package boundaries only when micro-packages are active
     if (isRootCompositor || isMicroPackage) {
       for (final asset in allAssets) {
-        if (asset == targetAsset ||
-            asset.path.endsWith('.cqrs.dart') ||
-            asset.path.endsWith('.config.dart') ||
-            asset.path.endsWith('.g.dart')) {
+        if (asset == targetAsset || _isGenerated(asset)) {
           continue;
         }
 
@@ -280,10 +334,7 @@ class LibraryScanner {
     final visitedClassNames = <String>{};
 
     for (final asset in allAssets) {
-      if (asset == targetAsset ||
-          asset.path.endsWith('.cqrs.dart') ||
-          asset.path.endsWith('.config.dart') ||
-          asset.path.endsWith('.g.dart')) {
+      if (asset == targetAsset || _isGenerated(asset)) {
         continue;
       }
 
