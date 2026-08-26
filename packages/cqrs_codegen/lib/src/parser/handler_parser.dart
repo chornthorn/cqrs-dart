@@ -30,31 +30,44 @@ class HandlerParser {
       final name = supertype.element.name;
 
       if (name == 'CommandHandler' && supertype.typeArguments.length >= 2) {
+        final messageType = supertype.typeArguments[0];
+        final resultType = supertype.typeArguments[1];
         return HandlerInfo(
           className: className,
           kind: HandlerKind.command,
-          messageTypeName: _formatType(supertype.typeArguments[0]),
-          resultTypeName: _formatType(supertype.typeArguments[1]),
+          messageTypeName: _formatType(messageType),
+          resultTypeName: _formatType(resultType),
           hasDefaultConstructor: hasDefaultConstructor,
+          classElement: classElement,
+          messageType: messageType,
+          resultType: resultType,
         );
       }
 
       if (name == 'QueryHandler' && supertype.typeArguments.length >= 2) {
+        final messageType = supertype.typeArguments[0];
+        final resultType = supertype.typeArguments[1];
         return HandlerInfo(
           className: className,
           kind: HandlerKind.query,
-          messageTypeName: _formatType(supertype.typeArguments[0]),
-          resultTypeName: _formatType(supertype.typeArguments[1]),
+          messageTypeName: _formatType(messageType),
+          resultTypeName: _formatType(resultType),
           hasDefaultConstructor: hasDefaultConstructor,
+          classElement: classElement,
+          messageType: messageType,
+          resultType: resultType,
         );
       }
 
       if (name == 'EventHandler' && supertype.typeArguments.isNotEmpty) {
+        final messageType = supertype.typeArguments[0];
         return HandlerInfo(
           className: className,
           kind: HandlerKind.event,
-          messageTypeName: _formatType(supertype.typeArguments[0]),
+          messageTypeName: _formatType(messageType),
           hasDefaultConstructor: hasDefaultConstructor,
+          classElement: classElement,
+          messageType: messageType,
         );
       }
     }

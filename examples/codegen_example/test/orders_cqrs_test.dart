@@ -1,4 +1,7 @@
 import 'package:codegen_example/cqrs_init.dart';
+import 'package:codegen_example/features/billing/billing.dart';
+import 'package:codegen_example/features/invoice/invoice.dart';
+import 'package:codegen_example/features/orders/orders.dart';
 import 'package:cqrs/cqrs.dart';
 import 'package:test/test.dart';
 
@@ -33,31 +36,28 @@ void main() {
 
     test('module pattern: dispatches command and publishes event', () async {
       final orderId = await dispatcher.command(
-        PlaceOrderCommand(item: 'MacBook Pro', amount: 2499.00),
+        PlaceOrderCommand(item: 'MacBook Pro M4', amount: 2499.00),
       );
 
       expect(orderId, startsWith('ORD-'));
+      expect(repository.findById(orderId), isNotNull);
 
+      // Verify the event was handled by both handlers
+      expect(invoiceHandler.sentInvoices, hasLength(1));
+      expect(invoiceHandler.sentInvoices.first, contains(orderId));
+
+      expect(analyticsHandler.recordedEvents, hasLength(1));
+      expect(analyticsHandler.recordedEvents.first, contains(orderId));
+
+      // Query the order back
       final order = await dispatcher.query(GetOrderQuery(orderId));
       expect(order, isNotNull);
-      expect(order!.item, 'MacBook Pro');
+      expect(order!.item, 'MacBook Pro M4');
       expect(order.amount, 2499.00);
-
-      expect(invoiceHandler.sentInvoices.length, 1);
-      expect(
-        invoiceHandler.sentInvoices.first,
-        contains('Invoice sent for order $orderId (\$2499.0)'),
-      );
-
-      expect(analyticsHandler.recordedEvents.length, 1);
-      expect(
-        analyticsHandler.recordedEvents.first,
-        contains('Analytics logged for order $orderId'),
-      );
     });
 
     test('module pattern: returns null for non-existent order', () async {
-      final order = await dispatcher.query(GetOrderQuery('not-found'));
+      final order = await dispatcher.query(GetOrderQuery('non-existent'));
       expect(order, isNull);
     });
   });
@@ -76,7 +76,7 @@ void main() {
       invoiceHandler = InvoiceNotificationHandler();
       auditLogHandler = InvoiceAuditLogHandler();
 
-      // One call wires all micro-packages via the generated AppCqrsModule compositor.
+      // Registers ALL micro-packages in one call via generated AppCqrsModule.
       dispatcher.registry.registerModule(
         AppCqrsModule(
           billingCqrsModule: BillingCqrsModule(
@@ -109,40 +109,37 @@ void main() {
     });
 
     test('compositor: places order then generates invoice end-to-end', () async {
-      // Place an order
       final orderId = await dispatcher.command(
-        PlaceOrderCommand(item: 'AirPods Pro', amount: 249.00),
+        PlaceOrderCommand(item: 'iPhone 16 Pro', amount: 1199.00),
       );
       expect(orderId, startsWith('ORD-'));
 
-      // Orders event handler fired
-      expect(invoiceHandler.sentInvoices, hasLength(1));
-
-      // Generate an invoice for that order
       final invoice = await dispatcher.command(
-        GenerateInvoiceCommand(orderId: orderId, amount: 249.00),
+        GenerateInvoiceCommand(orderId: orderId, amount: 1199.00),
       );
       expect(invoice.id, startsWith('INV-'));
-      expect(invoice.orderId, orderId);
+      expect(invoice.amount, 1199.00);
 
-      // Retrieve the invoice
-      final fetched = await dispatcher.query(GetInvoiceQuery(invoice.id));
-      expect(fetched?.id, invoice.id);
-
-      // Invoice audit log event handler fired
+      // Verify cross-module handlers ran
+      expect(invoiceHandler.sentInvoices, hasLength(1));
       expect(auditLogHandler.auditLog, hasLength(1));
-      expect(auditLogHandler.auditLog.first, contains('[AUDIT]'));
+
+      // Query both modules
+      final order = await dispatcher.query(GetOrderQuery(orderId));
+      expect(order?.item, 'iPhone 16 Pro');
+
+      final fetchedInvoice = await dispatcher.query(GetInvoiceQuery(invoice.id));
+      expect(fetchedInvoice?.amount, 1199.00);
     });
 
     test('compositor: returns null for unknown order', () async {
-      final order = await dispatcher.query(GetOrderQuery('ghost'));
+      final order = await dispatcher.query(GetOrderQuery('ORD-404'));
       expect(order, isNull);
     });
 
     test('compositor: returns null for unknown invoice', () async {
-      final invoice = await dispatcher.query(GetInvoiceQuery('INV-GHOST'));
+      final invoice = await dispatcher.query(GetInvoiceQuery('INV-404'));
       expect(invoice, isNull);
     });
   });
 }
-

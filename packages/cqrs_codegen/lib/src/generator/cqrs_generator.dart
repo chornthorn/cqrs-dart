@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:build/build.dart';
-import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
 
 import '../annotations/cqrs_annotations.dart';
@@ -11,8 +10,8 @@ import '../model/handler_info.dart';
 import '../parser/handler_parser.dart';
 import 'library_scanner.dart';
 
-/// Generator that creates standalone `.cqrs.dart` files with auto-imports,
-/// registration extensions, and `CqrsPackageModule` subclasses.
+/// Generator that creates standalone `.cqrs.dart` files with Injectable-style
+/// aliased absolute package imports (`as _i1`, `as _i2`, etc.) to prevent conflicts.
 class CqrsGenerator extends Generator {
   const CqrsGenerator({
     this.parser = const HandlerParser(),
@@ -153,24 +152,40 @@ class CqrsGenerator extends Generator {
     final bool shouldEmitModuleClass =
         useMicroPackage && (handlers.isNotEmpty || effectiveModuleClasses.isNotEmpty);
 
-    final buffer = StringBuffer();
+    // Build alias mappings (Injectable-style)
+    final cqrsUri = Uri.parse('package:cqrs/cqrs.dart');
+    final importAliases = <Uri, String>{
+      cqrsUri: '_i1',
+    };
 
-    // 1. Emit top-level imports for standalone file
-    buffer.writeln("import 'package:cqrs/cqrs.dart';");
-    for (final importUri in scanResult.handlerImportUris) {
-      buffer.writeln("import '$importUri';");
-    }
-
+    var aliasIndex = 2;
     if (isRootCompositor) {
-      final targetDirPath = p.dirname(buildStep.inputId.path);
       for (final sub in scanResult.subModules) {
         if (effectiveModuleClasses.contains(sub.moduleClassName)) {
-          final relPath = p
-              .relative(sub.assetId.path, from: targetDirPath)
-              .replaceAll(r'\', '/');
-          buffer.writeln("import '$relPath';");
+          if (!importAliases.containsKey(sub.packageUri)) {
+            importAliases[sub.packageUri] = '_i$aliasIndex';
+            aliasIndex++;
+          }
         }
       }
+    } else {
+      for (final uri in scanResult.typeUris) {
+        if (!importAliases.containsKey(uri)) {
+          importAliases[uri] = '_i$aliasIndex';
+          aliasIndex++;
+        }
+      }
+    }
+
+    final buffer = StringBuffer();
+    buffer.writeln(
+      '// ignore_for_file: no_leading_underscores_for_library_prefixes, prefer_initializing_formals',
+    );
+    buffer.writeln();
+
+    // 1. Emit aliased absolute imports
+    for (final entry in importAliases.entries) {
+      buffer.writeln("import '${entry.key}' as ${entry.value};");
     }
 
     buffer.writeln();
@@ -180,13 +195,15 @@ class CqrsGenerator extends Generator {
       buffer.writeln(
         '/// Generated registration helper for discovered CQRS handlers ($extensionName).',
       );
-      buffer.writeln('extension $extensionName on HandlerRegistry {');
+      buffer.writeln('extension $extensionName on _i1.HandlerRegistry {');
       buffer.writeln('  void $methodName({');
 
       for (final handler in handlers) {
-        final paramType = '${handler.className} Function()';
+        final handlerTypeStr =
+            scanner.formatTypeWithAlias(handler.classElement?.thisType, importAliases);
+        final paramType = '$handlerTypeStr Function()';
         if (handler.hasDefaultConstructor && includeDefaults) {
-          buffer.writeln('    $paramType ${handler.paramName} = ${handler.className}.new,');
+          buffer.writeln('    $paramType ${handler.paramName} = $handlerTypeStr.new,');
         } else {
           buffer.writeln('    required $paramType ${handler.paramName},');
         }
@@ -195,18 +212,24 @@ class CqrsGenerator extends Generator {
       buffer.writeln('  }) {');
 
       for (final handler in handlers) {
+        final msgTypeStr =
+            scanner.formatTypeWithAlias(handler.messageType, importAliases);
+        final resTypeStr = handler.resultType != null
+            ? scanner.formatTypeWithAlias(handler.resultType, importAliases)
+            : null;
+
         switch (handler.kind) {
           case HandlerKind.command:
             buffer.writeln(
-              '    registerCommand<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
+              '    registerCommand<$msgTypeStr, $resTypeStr>(${handler.paramName});',
             );
           case HandlerKind.query:
             buffer.writeln(
-              '    registerQuery<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
+              '    registerQuery<$msgTypeStr, $resTypeStr>(${handler.paramName});',
             );
           case HandlerKind.event:
             buffer.writeln(
-              '    registerEvent<${handler.messageTypeName}>(${handler.paramName});',
+              '    registerEvent<$msgTypeStr>(${handler.paramName});',
             );
         }
       }
@@ -215,16 +238,13 @@ class CqrsGenerator extends Generator {
       buffer.writeln('}');
     } else if (!shouldEmitModuleClass) {
       buffer.writeln('// No CQRS handlers found in scope.');
-      buffer.writeln('extension $extensionName on HandlerRegistry {');
+      buffer.writeln('extension $extensionName on _i1.HandlerRegistry {');
       buffer.writeln('  void $methodName() {}');
       buffer.writeln('}');
     }
 
     // 3. Emit CqrsPackageModule subclass if useMicroPackage is true
     if (useMicroPackage) {
-      buffer.writeln(
-        '// ignore_for_file: prefer_initializing_formals',
-      );
       buffer.writeln();
       if (handlers.isEmpty && effectiveModuleClasses.isEmpty) {
         _writeEmptyModuleClass(buffer, moduleClassName, methodName);
@@ -234,8 +254,11 @@ class CqrsGenerator extends Generator {
           moduleClassName: moduleClassName,
           methodName: methodName,
           handlers: handlers,
-          subModuleTypeNames: effectiveModuleClasses,
+          subModules: scanResult.subModules
+              .where((s) => effectiveModuleClasses.contains(s.moduleClassName))
+              .toList(),
           includeDefaults: includeDefaults,
+          importAliases: importAliases,
         );
       }
     }
@@ -250,11 +273,11 @@ class CqrsGenerator extends Generator {
     String methodName,
   ) {
     buffer.writeln('/// Generated [CqrsPackageModule] with no registered handlers.');
-    buffer.writeln('class $moduleClassName extends CqrsPackageModule {');
+    buffer.writeln('class $moduleClassName extends _i1.CqrsPackageModule {');
     buffer.writeln('  const $moduleClassName() : super();');
     buffer.writeln();
     buffer.writeln('  @override');
-    buffer.writeln('  void register(HandlerRegistry registry) {}');
+    buffer.writeln('  void register(_i1.HandlerRegistry registry) {}');
     buffer.writeln('}');
   }
 
@@ -265,8 +288,9 @@ class CqrsGenerator extends Generator {
     required String moduleClassName,
     required String methodName,
     required List<HandlerInfo> handlers,
-    required List<String> subModuleTypeNames,
+    required List<DiscoveredModule> subModules,
     required bool includeDefaults,
+    required Map<Uri, String> importAliases,
   }) {
     String paramName(String typeName) =>
         typeName[0].toLowerCase() + typeName.substring(1);
@@ -278,8 +302,8 @@ class CqrsGenerator extends Generator {
     buffer.writeln('/// Usage:');
     buffer.writeln('/// ```dart');
     buffer.writeln('/// registry.registerModule($moduleClassName(');
-    for (final t in subModuleTypeNames) {
-      buffer.writeln('///   ${paramName(t)}: $t(...),');
+    for (final s in subModules) {
+      buffer.writeln('///   ${paramName(s.moduleClassName)}: ${s.moduleClassName}(...),');
     }
     final requiredHandlers =
         handlers.where((h) => !h.hasDefaultConstructor || !includeDefaults);
@@ -288,18 +312,23 @@ class CqrsGenerator extends Generator {
     }
     buffer.writeln('/// ));');
     buffer.writeln('/// ```');
-    buffer.writeln('class $moduleClassName extends CqrsPackageModule {');
+    buffer.writeln('class $moduleClassName extends _i1.CqrsPackageModule {');
 
     // Constructor
     buffer.writeln('  const $moduleClassName({');
-    for (final t in subModuleTypeNames) {
-      buffer.writeln('    required $t ${paramName(t)},');
+    for (final s in subModules) {
+      final alias = importAliases[s.packageUri] ?? '_i1';
+      buffer.writeln(
+        '    required $alias.${s.moduleClassName} ${paramName(s.moduleClassName)},',
+      );
     }
     for (final handler in handlers) {
-      final paramType = '${handler.className} Function()';
+      final handlerTypeStr =
+          scanner.formatTypeWithAlias(handler.classElement?.thisType, importAliases);
+      final paramType = '$handlerTypeStr Function()';
       if (handler.hasDefaultConstructor && includeDefaults) {
         buffer.writeln(
-          '    $paramType ${handler.paramName} = ${handler.className}.new,',
+          '    $paramType ${handler.paramName} = $handlerTypeStr.new,',
         );
       } else {
         buffer.writeln('    required $paramType ${handler.paramName},');
@@ -309,7 +338,8 @@ class CqrsGenerator extends Generator {
 
     // Initializer list
     final inits = <String>[
-      for (final t in subModuleTypeNames) '_${paramName(t)} = ${paramName(t)}',
+      for (final s in subModules)
+        '_${paramName(s.moduleClassName)} = ${paramName(s.moduleClassName)}',
       for (final h in handlers) '_${h.paramName} = ${h.paramName}',
     ];
     buffer.writeln('        ${inits.join(',\n        ')},');
@@ -317,19 +347,22 @@ class CqrsGenerator extends Generator {
     buffer.writeln();
 
     // Private fields
-    for (final t in subModuleTypeNames) {
-      buffer.writeln('  final $t _${paramName(t)};');
+    for (final s in subModules) {
+      final alias = importAliases[s.packageUri] ?? '_i1';
+      buffer.writeln('  final $alias.${s.moduleClassName} _${paramName(s.moduleClassName)};');
     }
     for (final handler in handlers) {
+      final handlerTypeStr =
+          scanner.formatTypeWithAlias(handler.classElement?.thisType, importAliases);
       buffer.writeln(
-        '  final ${handler.className} Function() _${handler.paramName};',
+        '  final $handlerTypeStr Function() _${handler.paramName};',
       );
     }
     buffer.writeln();
 
     // register() override
     buffer.writeln('  @override');
-    buffer.writeln('  void register(HandlerRegistry registry) {');
+    buffer.writeln('  void register(_i1.HandlerRegistry registry) {');
     if (handlers.isNotEmpty) {
       buffer.writeln('    registry.$methodName(');
       for (final handler in handlers) {
@@ -337,10 +370,10 @@ class CqrsGenerator extends Generator {
       }
       buffer.writeln('    );');
     }
-    if (subModuleTypeNames.isNotEmpty) {
+    if (subModules.isNotEmpty) {
       buffer.writeln('    registry.registerModules([');
-      for (final t in subModuleTypeNames) {
-        buffer.writeln('      _${paramName(t)},');
+      for (final s in subModules) {
+        buffer.writeln('      _${paramName(s.moduleClassName)},');
       }
       buffer.writeln('    ]);');
     }

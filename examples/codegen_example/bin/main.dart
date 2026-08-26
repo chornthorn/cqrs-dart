@@ -1,4 +1,8 @@
 import 'package:codegen_example/cqrs_init.dart';
+import 'package:codegen_example/features/billing/billing.dart';
+import 'package:codegen_example/features/billing/gateway/gateway.dart';
+import 'package:codegen_example/features/invoice/invoice.dart';
+import 'package:codegen_example/features/orders/orders.dart';
 import 'package:cqrs/cqrs.dart';
 
 void main() async {

@@ -5,49 +5,53 @@
 // CqrsGenerator
 // **************************************************************************
 
-import 'package:cqrs/cqrs.dart';
-import 'features/billing/billing_cqrs_module.dart';
-import 'features/billing/gateway/gateway_cqrs_module.dart';
-import 'features/invoice/invoice_cqrs_module.dart';
-import 'features/orders/orders_cqrs_module.dart';
+// ignore_for_file: no_leading_underscores_for_library_prefixes, prefer_initializing_formals
 
-// ignore_for_file: prefer_initializing_formals
+import 'package:cqrs/cqrs.dart' as _i1;
+import 'package:codegen_example/features/billing/billing_cqrs_module.cqrs.dart'
+    as _i2;
+import 'package:codegen_example/features/billing/gateway/gateway_cqrs_module.cqrs.dart'
+    as _i3;
+import 'package:codegen_example/features/invoice/invoice_cqrs_module.cqrs.dart'
+    as _i4;
+import 'package:codegen_example/features/orders/orders_cqrs_module.cqrs.dart'
+    as _i5;
 
 /// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
 ///
 /// Usage:
 /// ```dart
 /// registry.registerModule(AppCqrsModule(
-///   ordersCqrsModule: OrdersCqrsModule(...),
-///   invoiceCqrsModule: InvoiceCqrsModule(...),
 ///   billingCqrsModule: BillingCqrsModule(...),
 ///   gatewayCqrsModule: GatewayCqrsModule(...),
+///   invoiceCqrsModule: InvoiceCqrsModule(...),
+///   ordersCqrsModule: OrdersCqrsModule(...),
 /// ));
 /// ```
-class AppCqrsModule extends CqrsPackageModule {
+class AppCqrsModule extends _i1.CqrsPackageModule {
   const AppCqrsModule({
-    required OrdersCqrsModule ordersCqrsModule,
-    required InvoiceCqrsModule invoiceCqrsModule,
-    required BillingCqrsModule billingCqrsModule,
-    required GatewayCqrsModule gatewayCqrsModule,
-  }) : _ordersCqrsModule = ordersCqrsModule,
-       _invoiceCqrsModule = invoiceCqrsModule,
-       _billingCqrsModule = billingCqrsModule,
+    required _i2.BillingCqrsModule billingCqrsModule,
+    required _i3.GatewayCqrsModule gatewayCqrsModule,
+    required _i4.InvoiceCqrsModule invoiceCqrsModule,
+    required _i5.OrdersCqrsModule ordersCqrsModule,
+  }) : _billingCqrsModule = billingCqrsModule,
        _gatewayCqrsModule = gatewayCqrsModule,
+       _invoiceCqrsModule = invoiceCqrsModule,
+       _ordersCqrsModule = ordersCqrsModule,
        super();
 
-  final OrdersCqrsModule _ordersCqrsModule;
-  final InvoiceCqrsModule _invoiceCqrsModule;
-  final BillingCqrsModule _billingCqrsModule;
-  final GatewayCqrsModule _gatewayCqrsModule;
+  final _i2.BillingCqrsModule _billingCqrsModule;
+  final _i3.GatewayCqrsModule _gatewayCqrsModule;
+  final _i4.InvoiceCqrsModule _invoiceCqrsModule;
+  final _i5.OrdersCqrsModule _ordersCqrsModule;
 
   @override
-  void register(HandlerRegistry registry) {
+  void register(_i1.HandlerRegistry registry) {
     registry.registerModules([
-      _ordersCqrsModule,
-      _invoiceCqrsModule,
       _billingCqrsModule,
       _gatewayCqrsModule,
+      _invoiceCqrsModule,
+      _ordersCqrsModule,
     ]);
   }
 }

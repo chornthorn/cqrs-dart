@@ -1,6 +1,8 @@
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
+import 'package:analyzer/dart/element/nullability_suffix.dart';
+import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
@@ -16,23 +18,25 @@ class DiscoveredModule {
     required this.moduleClassName,
     required this.assetId,
     required this.directory,
+    required this.packageUri,
   });
 
   final String moduleClassName;
   final AssetId assetId;
   final String directory;
+  final Uri packageUri;
 }
 
 /// Result of scanning a micro-package or root module directory.
 class ModuleScanResult {
   const ModuleScanResult({
     required this.handlers,
-    required this.handlerImportUris,
+    required this.typeUris,
     required this.subModules,
   });
 
   final List<HandlerInfo> handlers;
-  final List<String> handlerImportUris;
+  final Set<Uri> typeUris;
   final List<DiscoveredModule> subModules;
 }
 
@@ -127,6 +131,84 @@ class LibraryScanner {
     return null;
   }
 
+  /// Extracts the library [Uri] from an [Element] or [LibraryElement].
+  Uri? getLibraryUri(Element? element) {
+    if (element == null) return null;
+    try {
+      final lib = element is LibraryElement ? element : element.library;
+      if (lib != null) {
+        final identifier = lib.identifier;
+        if (identifier.isNotEmpty) {
+          return Uri.tryParse(identifier);
+        }
+      }
+    } catch (_) {}
+    return null;
+  }
+
+  /// Converts an [AssetId] into its absolute package URI string.
+  Uri assetToPackageUri(AssetId assetId) {
+    final path = assetId.path.startsWith('lib/')
+        ? assetId.path.substring(4)
+        : assetId.path;
+    return Uri.parse('package:${assetId.package}/$path');
+  }
+
+  /// Formats a [DartType] with its aliased import prefix (e.g. `_i2.PlaceOrderCommand`).
+  String formatTypeWithAlias(DartType? type, Map<Uri, String> importAliases) {
+    if (type == null || type is DynamicType) return 'dynamic';
+    if (type is VoidType) return 'void';
+    if (type is NeverType) return 'Never';
+
+    final element = type.element;
+    final isNullable = type.nullabilitySuffix == NullabilitySuffix.question;
+    final nullability = isNullable ? '?' : '';
+
+    if (element != null) {
+      final uri = getLibraryUri(element);
+      final rawName =
+          element.name ?? type.getDisplayString().replaceAll('?', '');
+      final alias = uri != null ? importAliases[uri] : null;
+      final prefix = (alias != null && uri?.scheme != 'dart') ? '$alias.' : '';
+
+      if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
+        final typeArgs = type.typeArguments
+            .map((arg) => formatTypeWithAlias(arg, importAliases))
+            .join(', ');
+        return '$prefix$rawName<$typeArgs>$nullability';
+      }
+      return '$prefix$rawName$nullability';
+    }
+
+    return type.getDisplayString();
+  }
+
+  /// Collects all library URIs referenced by a [DartType] and its generic arguments.
+  void collectTypeImports(DartType? type, Set<Uri> imports) {
+    if (type == null ||
+        type is DynamicType ||
+        type is VoidType ||
+        type is NeverType) {
+      return;
+    }
+
+    final element = type.element;
+    if (element != null) {
+      final uri = getLibraryUri(element);
+      if (uri != null && uri.scheme != 'dart') {
+        if (!uri.toString().startsWith('package:cqrs/')) {
+          imports.add(uri);
+        }
+      }
+    }
+
+    if (type is ParameterizedType) {
+      for (final typeArg in type.typeArguments) {
+        collectTypeImports(typeArg, imports);
+      }
+    }
+  }
+
   /// Scans the directory of [targetAsset] using [buildStep], respecting nested
   /// `@CqrsMicroPackage` boundaries.
   Future<ModuleScanResult> scanDirectory({
@@ -147,6 +229,7 @@ class LibraryScanner {
     for (final asset in allAssets) {
       if (asset == targetAsset ||
           asset.path.endsWith('.cqrs.dart') ||
+          asset.path.endsWith('.config.dart') ||
           asset.path.endsWith('.g.dart')) {
         continue;
       }
@@ -157,10 +240,15 @@ class LibraryScanner {
         final moduleClassName = findMicroPackageModuleClass(lib);
         if (moduleClassName != null) {
           final assetDir = p.dirname(asset.path);
+          final cqrsAsset = AssetId(
+            asset.package,
+            asset.path.replaceAll(RegExp(r'\.dart$'), '.cqrs.dart'),
+          );
           final module = DiscoveredModule(
             moduleClassName: moduleClassName,
             assetId: asset,
             directory: assetDir,
+            packageUri: assetToPackageUri(cqrsAsset),
           );
           discoveredSubModules.add(module);
 
@@ -176,7 +264,7 @@ class LibraryScanner {
     if (isRootCompositor) {
       return ModuleScanResult(
         handlers: const [],
-        handlerImportUris: const [],
+        typeUris: const {},
         subModules: discoveredSubModules,
       );
     }
@@ -185,12 +273,13 @@ class LibraryScanner {
 
     // 2. Scan handlers only in files belonging to this module's boundary
     final handlers = <HandlerInfo>[];
-    final handlerImportUris = <String>{};
+    final typeUris = <Uri>{};
     final visitedClassNames = <String>{};
 
     for (final asset in allAssets) {
       if (asset == targetAsset ||
           asset.path.endsWith('.cqrs.dart') ||
+          asset.path.endsWith('.config.dart') ||
           asset.path.endsWith('.g.dart')) {
         continue;
       }
@@ -206,7 +295,6 @@ class LibraryScanner {
       try {
         if (!await buildStep.resolver.isLibrary(asset)) continue;
         final lib = await buildStep.resolver.libraryFor(asset);
-        bool hasHandlersInThisFile = false;
 
         for (final c in lib.classes) {
           final name = c.name;
@@ -214,24 +302,25 @@ class LibraryScanner {
             final info = parser.parseClass(c);
             if (info != null) {
               handlers.add(info);
-              hasHandlersInThisFile = true;
+
+              // Auto-collect type imports for handler class and referenced types
+              final classUri = getLibraryUri(c);
+              if (classUri != null &&
+                  classUri.scheme != 'dart' &&
+                  !classUri.toString().startsWith('package:cqrs/')) {
+                typeUris.add(classUri);
+              }
+              collectTypeImports(info.messageType, typeUris);
+              collectTypeImports(info.resultType, typeUris);
             }
           }
-        }
-
-        if (hasHandlersInThisFile) {
-          // Derive a relative import path from target asset directory to this asset
-          final relativeImport = p
-              .relative(asset.path, from: targetDirPath)
-              .replaceAll(r'\', '/');
-          handlerImportUris.add(relativeImport);
         }
       } catch (_) {}
     }
 
     return ModuleScanResult(
       handlers: handlers,
-      handlerImportUris: handlerImportUris.toList()..sort(),
+      typeUris: typeUris,
       subModules: discoveredSubModules,
     );
   }
