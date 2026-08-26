@@ -8,10 +8,10 @@ import 'package:test/test.dart';
 final getIt = GetIt.instance;
 
 class MockDispatcher extends DefaultCqrsDispatcher {
-  final List<DomainEvent> publishedEvents = [];
+  final List<Event> publishedEvents = [];
 
   @override
-  Future<void> publish<TEvent extends DomainEvent>(TEvent event) async {
+  Future<void> publish<TEvent extends Event>(TEvent event) async {
     publishedEvents.add(event);
   }
 }

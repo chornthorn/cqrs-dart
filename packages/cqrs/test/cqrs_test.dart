@@ -30,12 +30,12 @@ class EchoCommandHandler implements CommandHandler<EchoCommand, int> {
   }
 }
 
-class EchoedEvent extends DomainEvent {
+class EchoedEvent extends Event {
   EchoedEvent(this.value);
   final int value;
 }
 
-class UnusedEvent extends DomainEvent {}
+class UnusedEvent extends Event {}
 
 class RecordingHandler implements EventHandler<EchoedEvent> {
   RecordingHandler(this.label, this.log);
@@ -89,7 +89,7 @@ class TrackingEventMiddleware implements EventMiddleware {
   final String tag;
 
   @override
-  Future<void> handle<TEvent extends DomainEvent>(
+  Future<void> handle<TEvent extends Event>(
     TEvent event,
     NextEventHandler next,
   ) async {

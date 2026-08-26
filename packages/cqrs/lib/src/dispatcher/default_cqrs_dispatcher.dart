@@ -74,7 +74,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   }
 
   @override
-  Future<void> publish<TEvent extends DomainEvent>(TEvent event) {
+  Future<void> publish<TEvent extends Event>(TEvent event) {
     final handlers = _registry.resolveEvents<TEvent>(
       eventType: event.runtimeType,
     );
@@ -98,7 +98,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   }
 
   @override
-  Future<void> publishAll(Iterable<DomainEvent> events) async {
+  Future<void> publishAll(Iterable<Event> events) async {
     for (final event in events) {
       await publish(event);
     }

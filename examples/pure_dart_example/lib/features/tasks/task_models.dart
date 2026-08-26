@@ -39,13 +39,13 @@ class TaskRepository {
 }
 
 /// Domain Events
-class TaskCreatedEvent extends DomainEvent {
+class TaskCreatedEvent extends Event {
   TaskCreatedEvent(this.taskId, this.title);
   final String taskId;
   final String title;
 }
 
-class TaskCompletedEvent extends DomainEvent {
+class TaskCompletedEvent extends Event {
   TaskCompletedEvent(this.taskId);
   final String taskId;
 }

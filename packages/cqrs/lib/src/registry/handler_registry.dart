@@ -34,7 +34,7 @@ abstract interface class HandlerRegistry {
   );
 
   /// Registers a factory for an [EventHandler].
-  void registerEvent<TEvent extends DomainEvent>(
+  void registerEvent<TEvent extends Event>(
     HandlerFactory<EventHandler<TEvent>> factory,
   );
 
@@ -51,7 +51,7 @@ abstract interface class HandlerRegistry {
   });
 
   /// Resolves all registered [EventHandler]s for [TEvent].
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends Event>({
     Type? eventType,
   });
 }

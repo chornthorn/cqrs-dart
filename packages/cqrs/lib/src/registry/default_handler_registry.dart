@@ -31,7 +31,7 @@ class DefaultHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  void registerEvent<TEvent extends DomainEvent>(
+  void registerEvent<TEvent extends Event>(
     HandlerFactory<EventHandler<TEvent>> factory,
   ) {
     _eventHandlers.putIfAbsent(TEvent, () => []).add(factory);
@@ -60,7 +60,7 @@ class DefaultHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends Event>({
     Type? eventType,
   }) {
     final type = eventType ?? TEvent;

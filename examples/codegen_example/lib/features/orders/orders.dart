@@ -1,6 +1,6 @@
 import 'package:cqrs/cqrs.dart';
 
-// Domain Entities
+// Entity & Repository
 class Order {
   Order({
     required this.id,
@@ -24,7 +24,7 @@ class OrderRepository {
 }
 
 // Events
-class OrderPlacedEvent extends DomainEvent {
+class OrderPlacedEvent extends Event {
   OrderPlacedEvent(this.orderId, this.amount);
   final String orderId;
   final double amount;
@@ -40,12 +40,12 @@ class PlaceOrderCommand extends Command<String> {
 class PlaceOrderCommandHandler
     implements CommandHandler<PlaceOrderCommand, String> {
   PlaceOrderCommandHandler({
-    required this._repository,
-    required this._publisher,
+    required this.repository,
+    required this.publisher,
   });
 
-  final OrderRepository _repository;
-  final EventPublisher _publisher;
+  final OrderRepository repository;
+  final EventPublisher publisher;
 
   @override
   Future<String> execute(PlaceOrderCommand command) async {
@@ -55,8 +55,8 @@ class PlaceOrderCommandHandler
       item: command.item,
       amount: command.amount,
     );
-    _repository.save(order);
-    await _publisher.publish(OrderPlacedEvent(orderId, command.amount));
+    repository.save(order);
+    await publisher.publish(OrderPlacedEvent(orderId, command.amount));
     return orderId;
   }
 }
@@ -68,23 +68,24 @@ class GetOrderQuery extends Query<Order?> {
 }
 
 class GetOrderQueryHandler implements QueryHandler<GetOrderQuery, Order?> {
-  GetOrderQueryHandler({required this._repository});
-
-  final OrderRepository _repository;
+  GetOrderQueryHandler({required this.repository});
+  final OrderRepository repository;
 
   @override
   Future<Order?> execute(GetOrderQuery query) async {
-    return _repository.findById(query.orderId);
+    return repository.findById(query.orderId);
   }
 }
 
-// Event Handlers (0-argument constructors)
+// Event Handlers
 class InvoiceNotificationHandler implements EventHandler<OrderPlacedEvent> {
   final List<String> sentInvoices = [];
 
   @override
   Future<void> handle(OrderPlacedEvent event) async {
-    sentInvoices.add('Invoice sent for order ${event.orderId} (\$${event.amount})');
+    sentInvoices.add(
+      'Invoice sent for order ${event.orderId} (\$${event.amount})',
+    );
   }
 }
 

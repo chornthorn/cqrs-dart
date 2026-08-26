@@ -13,7 +13,7 @@ abstract class CqrsModule {
         registry: HandlerRegistry.resolver(
           resolver: (type) =>
               getIt.isRegistered(type: type) ? getIt.get(type: type) : null,
-          eventResolver: <E extends DomainEvent>() =>
+          eventResolver: <E extends Event>() =>
               getIt.isRegistered<EventHandler<E>>()
                   ? getIt.getAll<EventHandler<E>>().toList()
                   : const [],

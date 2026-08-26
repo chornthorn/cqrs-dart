@@ -1,6 +1,6 @@
 import 'package:cqrs/cqrs.dart';
 
-class NotificationReadEvent extends DomainEvent {
+class NotificationReadEvent extends Event {
   NotificationReadEvent({
     required this.notificationId,
     required this.recipientId,

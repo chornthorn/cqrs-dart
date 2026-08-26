@@ -3,64 +3,61 @@ import '../contracts/event.dart';
 import '../contracts/query.dart';
 import 'middleware.dart';
 
-/// Helper to execute middleware chains in onion-layer order.
+/// Helper to execute middleware chains in onion-style nesting.
 class PipelineRunner {
-  const PipelineRunner._();
+  PipelineRunner._();
 
-  /// Runs [middlewares] in order around [handler].
+  /// Runs [command] through [middlewares] and finally executes [handler].
   static Future<TResult> runCommand<TCommand extends Command<TResult>, TResult>({
     required TCommand command,
     required List<CommandMiddleware> middlewares,
     required Future<TResult> Function() handler,
   }) {
-    Future<TResult> executeStep(int index) {
-      if (index >= middlewares.length) {
-        return handler();
-      }
-      return middlewares[index].handle<TCommand, TResult>(
-        command,
-        () => executeStep(index + 1),
-      );
+    if (middlewares.isEmpty) return handler();
+
+    NextHandler<TResult> next = handler;
+    for (var i = middlewares.length - 1; i >= 0; i--) {
+      final middleware = middlewares[i];
+      final currentNext = next;
+      next = () => middleware.handle(command, currentNext);
     }
 
-    return executeStep(0);
+    return next();
   }
 
-  /// Runs [middlewares] in order around [handler].
+  /// Runs [query] through [middlewares] and finally executes [handler].
   static Future<TResult> runQuery<TQuery extends Query<TResult>, TResult>({
     required TQuery query,
     required List<QueryMiddleware> middlewares,
     required Future<TResult> Function() handler,
   }) {
-    Future<TResult> executeStep(int index) {
-      if (index >= middlewares.length) {
-        return handler();
-      }
-      return middlewares[index].handle<TQuery, TResult>(
-        query,
-        () => executeStep(index + 1),
-      );
+    if (middlewares.isEmpty) return handler();
+
+    NextHandler<TResult> next = handler;
+    for (var i = middlewares.length - 1; i >= 0; i--) {
+      final middleware = middlewares[i];
+      final currentNext = next;
+      next = () => middleware.handle(query, currentNext);
     }
 
-    return executeStep(0);
+    return next();
   }
 
-  /// Runs [middlewares] in order around [handler].
-  static Future<void> runEvent<TEvent extends DomainEvent>({
+  /// Runs [event] through [middlewares] and finally executes [handler].
+  static Future<void> runEvent<TEvent extends Event>({
     required TEvent event,
     required List<EventMiddleware> middlewares,
     required Future<void> Function() handler,
   }) {
-    Future<void> executeStep(int index) {
-      if (index >= middlewares.length) {
-        return handler();
-      }
-      return middlewares[index].handle<TEvent>(
-        event,
-        () => executeStep(index + 1),
-      );
+    if (middlewares.isEmpty) return handler();
+
+    NextEventHandler next = handler;
+    for (var i = middlewares.length - 1; i >= 0; i--) {
+      final middleware = middlewares[i];
+      final currentNext = next;
+      next = () => middleware.handle(event, currentNext);
     }
 
-    return executeStep(0);
+    return next();
   }
 }

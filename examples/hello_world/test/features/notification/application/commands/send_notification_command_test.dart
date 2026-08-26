@@ -5,10 +5,10 @@ import 'package:hello_world/features/notification/infrastructure/notification_re
 import 'package:test/test.dart';
 
 class MockDispatcher extends DefaultCqrsDispatcher {
-  final List<DomainEvent> publishedEvents = [];
+  final List<Event> publishedEvents = [];
 
   @override
-  Future<void> publish<TEvent extends DomainEvent>(TEvent event) async {
+  Future<void> publish<TEvent extends Event>(TEvent event) async {
     publishedEvents.add(event);
   }
 }

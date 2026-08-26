@@ -1,10 +1,10 @@
-/// A domain event signifying that a state change has occurred.
-abstract class DomainEvent {
-  const DomainEvent();
+/// An event signifying that a state change or significant action has occurred.
+abstract class Event {
+  const Event();
 }
 
-/// Handles a published domain event of type [TEvent].
-abstract interface class EventHandler<TEvent extends DomainEvent> {
-  /// Handles the given domain [event].
+/// Handles a published event of type [TEvent].
+abstract interface class EventHandler<TEvent extends Event> {
+  /// Handles the given [event].
   Future<void> handle(TEvent event);
 }

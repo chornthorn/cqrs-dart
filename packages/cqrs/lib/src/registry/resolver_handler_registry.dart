@@ -10,7 +10,7 @@ typedef HandlerResolver = Object? Function(Type handlerType);
 typedef MultiHandlerResolver = List<dynamic> Function(Type handlerType);
 
 /// Generic event resolver callback type for typed containers like GetIt.
-typedef EventResolver = List<EventHandler<TEvent>> Function<TEvent extends DomainEvent>();
+typedef EventResolver = List<EventHandler<TEvent>> Function<TEvent extends Event>();
 
 /// An adapter implementation of [HandlerRegistry] that delegates handler
 /// resolution to an external container / service locator (such as GetIt, Riverpod, etc.).
@@ -49,7 +49,7 @@ class ResolverHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  void registerEvent<TEvent extends DomainEvent>(
+  void registerEvent<TEvent extends Event>(
     HandlerFactory<EventHandler<TEvent>> factory,
   ) {
     throw UnsupportedError(
@@ -76,7 +76,7 @@ class ResolverHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends Event>({
     Type? eventType,
   }) {
     if (eventResolver != null) {

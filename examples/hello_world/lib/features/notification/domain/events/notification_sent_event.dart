@@ -1,13 +1,13 @@
 import 'package:cqrs/cqrs.dart';
 
-class NotificationSentEvent extends DomainEvent {
+class NotificationSentEvent extends Event {
   NotificationSentEvent({
     required this.notificationId,
-    required this.recipientId,
     required this.title,
+    required this.recipientId,
   });
 
   final String notificationId;
-  final String recipientId;
   final String title;
+  final String recipientId;
 }

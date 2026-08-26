@@ -3,7 +3,7 @@ import 'package:hello_world/features/user/user.dart';
 import 'package:hello_world/injection.dart';
 import 'package:test/test.dart';
 
-class UnusedEvent extends DomainEvent {}
+class UnusedEvent extends Event {}
 
 void main() {
   setUp(() async {

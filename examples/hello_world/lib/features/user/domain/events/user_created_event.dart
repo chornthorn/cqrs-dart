@@ -1,6 +1,6 @@
 import 'package:cqrs/cqrs.dart';
 
-class UserCreatedEvent extends DomainEvent {
+class UserCreatedEvent extends Event {
   UserCreatedEvent(this.userId);
 
   final String userId;

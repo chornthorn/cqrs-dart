@@ -1,20 +1,23 @@
-The `application/` layer must contain 0 Flutter UI imports (`package:flutter/...`). This guarantees 100% fast, isolated unit testability.
+# CQRS & Event-Driven Architecture Guide
 
-2. **Single Entry Point**:
-   Presentation controllers communicate exclusively through `CqrsDispatcher`:
+## Architecture Overview
 
-   ```dart
-   // Write / Mutate:
-   await dispatcher.command(CreateOrderCommand(items, total));
+This project implements a clean, decoupled CQRS (Command Query Responsibility Segregation) and Event-Driven architecture in pure Dart with zero external runtime dependencies.
 
-   // Read / Query:
-   final order = await dispatcher.query(GetOrderQuery(orderId));
-   ```
+### Core Principles
 
-3. **Commands (Mutations)**:
+1. **Explicit Separation of Concerns**:
+   - **Write model (Commands)** is completely separated from **Read model (Queries)**.
+   - Cross-cutting side effects are handled via **Events**.
+
+2. **Dispatcher & In-Process Bus**:
+   - `CqrsDispatcher` serves as the central mediator for dispatching commands, queries, and events.
+   - Handlers are resolved via `HandlerRegistry` (either in-memory map or service locator / DI container).
+
+3. **Commands (Writes)**:
    - Extend `Command<TResult>`.
    - Modifies system state.
-   - Triggers domain events via `dispatcher.publish(...)` upon successful completion.
+   - Triggers domain/system events via `dispatcher.publish(...)` upon successful completion.
 
 4. **Queries (Reads)**:
    - Extend `Query<TResult>`.
@@ -22,6 +25,10 @@ The `application/` layer must contain 0 Flutter UI imports (`package:flutter/...
    - Never mutate state or trigger side-effect events.
 
 5. **Event Handlers (Side-effects & Cross-cutting Concerns)**:
-   - Implement `EventHandler<TDomainEvent>`.
+   - Implement `EventHandler<TEvent>`.
    - React asynchronously to published events (e.g., analytics, notifications, push delivery, cache eviction).
    - Handlers are decoupled from the command that caused the event.
+
+6. **Onion-Layer Pipeline Middleware**:
+   - Commands, Queries, and Events can be intercepted using `CommandMiddleware`, `QueryMiddleware`, and `EventMiddleware`.
+   - Used for logging, performance metrics, validation, transaction boundaries, and error tracing.
