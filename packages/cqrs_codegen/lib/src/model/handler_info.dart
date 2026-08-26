@@ -2,7 +2,6 @@
 enum HandlerKind {
   command,
   query,
-  streamQuery,
   event,
 }
 
@@ -25,7 +24,7 @@ class HandlerInfo {
   /// The type name of the command, query, or event.
   final String messageTypeName;
 
-  /// The type name of the result (for command/query/streamQuery).
+  /// The type name of the result (for command/query).
   final String? resultTypeName;
 
   /// Whether the handler class has an unnamed constructor with no required arguments.

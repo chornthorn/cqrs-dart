@@ -1,30 +1,26 @@
 import '../contracts/command.dart';
 import '../contracts/event.dart';
 import '../contracts/query.dart';
-import '../contracts/stream_query.dart';
 import 'default_handler_registry.dart';
 import 'resolver_handler_registry.dart';
 
-/// Factory function to instantiate a handler.
+/// Function signature for constructing a handler instance on demand.
 typedef HandlerFactory<T> = T Function();
 
-/// Pluggable resolver function for looking up handlers dynamically.
-typedef HandlerResolver = Object? Function(Type handlerType);
-
-/// Contract for registering and resolving CQRS handlers.
+/// Contract for registering and resolving CQRS command, query, and event handlers.
 abstract interface class HandlerRegistry {
-  /// Creates a [DefaultHandlerRegistry].
+  /// Creates a default map-based in-process handler registry.
   factory HandlerRegistry() = DefaultHandlerRegistry;
 
-  /// Creates a [DefaultHandlerRegistry].
+  /// Creates a default map-based in-process handler registry.
   factory HandlerRegistry.defaultRegistry() = DefaultHandlerRegistry;
 
-  /// Creates a [HandlerRegistry] backed by an external resolver function (e.g., GetIt, Riverpod, Kiwi).
+  /// Creates a handler registry backed by a custom resolver callback
+  /// (e.g. for dependency injection containers like GetIt or Riverpod).
   factory HandlerRegistry.resolver({
     required HandlerResolver resolver,
-    Iterable<dynamic> Function(Type type)? multiResolver,
-    List<EventHandler<TEvent>> Function<TEvent extends DomainEvent>()?
-        eventResolver,
+    MultiHandlerResolver? multiResolver,
+    EventResolver? eventResolver,
   }) = ResolverHandlerRegistry;
 
   /// Registers a factory for a [CommandHandler].
@@ -37,28 +33,25 @@ abstract interface class HandlerRegistry {
     HandlerFactory<QueryHandler<TQuery, TResult>> factory,
   );
 
-  /// Registers a factory for a [StreamQueryHandler].
-  void registerStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
-    HandlerFactory<StreamQueryHandler<TStreamQuery, TResult>> factory,
-  );
-
-  /// Registers a factory for an [EventHandler]. Multiple handlers per event type are allowed.
+  /// Registers a factory for an [EventHandler].
   void registerEvent<TEvent extends DomainEvent>(
     HandlerFactory<EventHandler<TEvent>> factory,
   );
 
   /// Resolves the registered [CommandHandler] for [TCommand]. Returns null if not found.
   CommandHandler<TCommand, TResult>?
-      resolveCommand<TCommand extends Command<TResult>, TResult>({Type? messageType});
+      resolveCommand<TCommand extends Command<TResult>, TResult>({
+    Type? messageType,
+  });
 
   /// Resolves the registered [QueryHandler] for [TQuery]. Returns null if not found.
   QueryHandler<TQuery, TResult>?
-      resolveQuery<TQuery extends Query<TResult>, TResult>({Type? messageType});
+      resolveQuery<TQuery extends Query<TResult>, TResult>({
+    Type? messageType,
+  });
 
-  /// Resolves the registered [StreamQueryHandler] for [TStreamQuery]. Returns null if not found.
-  StreamQueryHandler<TStreamQuery, TResult>?
-      resolveStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>({Type? messageType});
-
-  /// Resolves all registered [EventHandler] instances for [TEvent] (or [eventType]).
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({Type? eventType});
+  /// Resolves all registered [EventHandler]s for [TEvent].
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+    Type? eventType,
+  });
 }

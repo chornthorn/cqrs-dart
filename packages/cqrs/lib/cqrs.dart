@@ -1,12 +1,11 @@
-/// Pure Dart CQRS and event-driven architecture library.
+/// Lightweight, pure Dart CQRS and event-driven architecture library.
 library;
 
 // Contracts
 export 'src/contracts/command.dart';
 export 'src/contracts/event.dart';
 export 'src/contracts/query.dart';
-export 'src/contracts/stream_query.dart';
-// Dispatchers
+// Dispatcher
 export 'src/dispatcher/command_dispatcher.dart';
 export 'src/dispatcher/cqrs_dispatcher.dart';
 export 'src/dispatcher/default_cqrs_dispatcher.dart';
@@ -14,7 +13,7 @@ export 'src/dispatcher/event_publisher.dart';
 export 'src/dispatcher/query_dispatcher.dart';
 // Exceptions
 export 'src/exceptions/cqrs_exceptions.dart';
-// Pipeline / Middleware
+// Middleware & Pipelines
 export 'src/pipeline/middleware.dart';
 export 'src/pipeline/pipeline_runner.dart';
 // Registry

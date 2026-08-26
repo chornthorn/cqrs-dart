@@ -1,10 +1,10 @@
 # cqrs_codegen
 
-A code generator for the [`cqrs`](../cqrs) package that automatically discovers and registers CQRS command handlers, query handlers, stream query handlers, and event handlers.
+A code generator for the [`cqrs`](../cqrs) package that automatically discovers and registers CQRS command handlers, query handlers, and event handlers.
 
 ## Features
 
-- 🔍 **Auto-Discovery**: Discovers classes implementing `CommandHandler`, `QueryHandler`, `StreamQueryHandler`, or `EventHandler`.
+- 🔍 **Auto-Discovery**: Discovers classes implementing `CommandHandler`, `QueryHandler`, or `EventHandler`.
 - 🛠 **Zero-Boilerplate**: Generates type-safe `HandlerRegistry` extension methods.
 - 💉 **DI Friendly**: Easily bind dependencies for handlers with parameters, while automatically generating default factories for 0-argument handlers.
 
@@ -49,8 +49,8 @@ dart run build_runner build
 final dispatcher = CqrsDispatcher();
 
 dispatcher.registry.registerGeneratedHandlers(
-  placeOrderCommandHandler: () => PlaceOrderCommandHandler(repository, dispatcher),
-  getOrderQueryHandler: () => GetOrderQueryHandler(repository),
+  placeOrderCommandHandler: () => PlaceOrderCommandHandler(repository: repository, publisher: dispatcher),
+  getOrderQueryHandler: () => GetOrderQueryHandler(repository: repository),
   // Handlers with zero-arg constructors are provided by default!
 );
 

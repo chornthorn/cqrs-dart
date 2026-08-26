@@ -49,17 +49,6 @@ class HandlerParser {
         );
       }
 
-      if (name == 'StreamQueryHandler' &&
-          supertype.typeArguments.length >= 2) {
-        return HandlerInfo(
-          className: className,
-          kind: HandlerKind.streamQuery,
-          messageTypeName: _formatType(supertype.typeArguments[0]),
-          resultTypeName: _formatType(supertype.typeArguments[1]),
-          hasDefaultConstructor: hasDefaultConstructor,
-        );
-      }
-
       if (name == 'EventHandler' && supertype.typeArguments.isNotEmpty) {
         return HandlerInfo(
           className: className,

@@ -92,10 +92,6 @@ extension AutoRegisterCqrs on HandlerRegistry {
           buffer.writeln(
             '    registerQuery<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
           );
-        case HandlerKind.streamQuery:
-          buffer.writeln(
-            '    registerStreamQuery<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
-          );
         case HandlerKind.event:
           buffer.writeln(
             '    registerEvent<${handler.messageTypeName}>(${handler.paramName});',

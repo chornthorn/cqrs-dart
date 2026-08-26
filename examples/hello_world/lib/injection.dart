@@ -9,8 +9,8 @@ final getIt = GetIt.instance;
 @module
 abstract class CqrsModule {
   @singleton
-  CqrsDispatcher get cqrsDispatcher => DefaultCqrsDispatcher(
-        registry: ResolverHandlerRegistry(
+  CqrsDispatcher get cqrsDispatcher => CqrsDispatcher(
+        registry: HandlerRegistry.resolver(
           resolver: (type) =>
               getIt.isRegistered(type: type) ? getIt.get(type: type) : null,
           eventResolver: <E extends DomainEvent>() =>

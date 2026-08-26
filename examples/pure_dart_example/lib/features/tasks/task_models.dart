@@ -1,5 +1,3 @@
-import 'dart:async';
-
 import 'package:cqrs/cqrs.dart';
 
 /// Domain Entity
@@ -27,29 +25,17 @@ class TaskItem {
   }
 }
 
-/// In-memory repository with real-time stream broadcast
+/// In-memory repository
 class TaskRepository {
   final Map<String, TaskItem> _tasks = {};
-  final StreamController<List<TaskItem>> _streamController =
-      StreamController<List<TaskItem>>.broadcast();
-
-  Stream<List<TaskItem>> watchTasks() async* {
-    yield _tasks.values.toList(growable: false);
-    yield* _streamController.stream;
-  }
 
   void save(TaskItem task) {
     _tasks[task.id] = task;
-    _streamController.add(_tasks.values.toList(growable: false));
   }
 
   TaskItem? findById(String id) => _tasks[id];
 
   List<TaskItem> findAll() => _tasks.values.toList(growable: false);
-
-  void dispose() {
-    _streamController.close();
-  }
 }
 
 /// Domain Events

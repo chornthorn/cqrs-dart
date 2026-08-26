@@ -1,35 +1,41 @@
 import '../contracts/command.dart';
 import '../contracts/event.dart';
 import '../contracts/query.dart';
-import '../contracts/stream_query.dart';
 import 'handler_registry.dart';
 
-/// Handler registry backed by a generic resolver function (e.g., GetIt or custom IoC container).
+/// Handler resolver callback type.
+typedef HandlerResolver = Object? Function(Type handlerType);
+
+/// Multi-handler resolver callback type (for resolving all event handlers for an event).
+typedef MultiHandlerResolver = List<dynamic> Function(Type handlerType);
+
+/// Generic event resolver callback type for typed containers like GetIt.
+typedef EventResolver = List<EventHandler<TEvent>> Function<TEvent extends DomainEvent>();
+
+/// An adapter implementation of [HandlerRegistry] that delegates handler
+/// resolution to an external container / service locator (such as GetIt, Riverpod, etc.).
 class ResolverHandlerRegistry implements HandlerRegistry {
-  /// Creates a [ResolverHandlerRegistry] using the specified [resolver] and optional multi-resolvers.
   ResolverHandlerRegistry({
     required this.resolver,
     this.multiResolver,
     this.eventResolver,
   });
 
-  /// Resolver for single instances (e.g. `(Type t) => getIt.get(type: t)`).
-  final Object? Function(Type type) resolver;
+  /// Custom function to resolve a single handler instance by its interface type.
+  final HandlerResolver resolver;
 
-  /// Resolver for multiple instances by [Type] (e.g. `(Type t) => myContainer.getAll(t)`).
-  final Iterable<dynamic> Function(Type type)? multiResolver;
+  /// Custom function to resolve multiple handlers (useful for event subscribers).
+  final MultiHandlerResolver? multiResolver;
 
-  /// Generic resolver for multiple event handlers (e.g. `<E extends DomainEvent>() => getIt.getAll<EventHandler<E>>().toList()`).
-  final List<EventHandler<TEvent>> Function<TEvent extends DomainEvent>()?
-      eventResolver;
+  /// Generic function to resolve multiple event handlers by generic type.
+  final EventResolver? eventResolver;
 
   @override
   void registerCommand<TCommand extends Command<TResult>, TResult>(
     HandlerFactory<CommandHandler<TCommand, TResult>> factory,
   ) {
     throw UnsupportedError(
-      'Registering handlers directly on ResolverHandlerRegistry is unsupported. '
-      'Register handlers directly in your IoC container.',
+      'ResolverHandlerRegistry is read-only and resolves from an external container.',
     );
   }
 
@@ -38,18 +44,7 @@ class ResolverHandlerRegistry implements HandlerRegistry {
     HandlerFactory<QueryHandler<TQuery, TResult>> factory,
   ) {
     throw UnsupportedError(
-      'Registering handlers directly on ResolverHandlerRegistry is unsupported. '
-      'Register handlers directly in your IoC container.',
-    );
-  }
-
-  @override
-  void registerStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
-    HandlerFactory<StreamQueryHandler<TStreamQuery, TResult>> factory,
-  ) {
-    throw UnsupportedError(
-      'Registering handlers directly on ResolverHandlerRegistry is unsupported. '
-      'Register handlers directly in your IoC container.',
+      'ResolverHandlerRegistry is read-only and resolves from an external container.',
     );
   }
 
@@ -58,45 +53,47 @@ class ResolverHandlerRegistry implements HandlerRegistry {
     HandlerFactory<EventHandler<TEvent>> factory,
   ) {
     throw UnsupportedError(
-      'Registering handlers directly on ResolverHandlerRegistry is unsupported. '
-      'Register handlers directly in your IoC container.',
+      'ResolverHandlerRegistry is read-only and resolves from an external container.',
     );
   }
 
   @override
   CommandHandler<TCommand, TResult>?
-      resolveCommand<TCommand extends Command<TResult>, TResult>({Type? messageType}) {
+      resolveCommand<TCommand extends Command<TResult>, TResult>({
+    Type? messageType,
+  }) {
     final handler = resolver(CommandHandler<TCommand, TResult>);
     return handler as CommandHandler<TCommand, TResult>?;
   }
 
   @override
   QueryHandler<TQuery, TResult>?
-      resolveQuery<TQuery extends Query<TResult>, TResult>({Type? messageType}) {
+      resolveQuery<TQuery extends Query<TResult>, TResult>({
+    Type? messageType,
+  }) {
     final handler = resolver(QueryHandler<TQuery, TResult>);
     return handler as QueryHandler<TQuery, TResult>?;
   }
 
   @override
-  StreamQueryHandler<TStreamQuery, TResult>?
-      resolveStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>({Type? messageType}) {
-    final handler = resolver(StreamQueryHandler<TStreamQuery, TResult>);
-    return handler as StreamQueryHandler<TStreamQuery, TResult>?;
-  }
-
-  @override
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({Type? eventType}) {
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+    Type? eventType,
+  }) {
     if (eventResolver != null) {
       return eventResolver!<TEvent>();
     }
+
+    final targetType = EventHandler<TEvent>;
     if (multiResolver != null) {
-      final handlers = multiResolver!(EventHandler<TEvent>);
-      return handlers.cast<EventHandler<TEvent>>().toList(growable: false);
+      final handlers = multiResolver!(targetType);
+      return handlers.map((h) => h as EventHandler<TEvent>).toList();
     }
-    final single = resolver(EventHandler<TEvent>);
-    if (single is EventHandler<TEvent>) {
-      return [single];
+
+    final single = resolver(targetType);
+    if (single != null) {
+      return [single as EventHandler<TEvent>];
     }
+
     return const [];
   }
 }

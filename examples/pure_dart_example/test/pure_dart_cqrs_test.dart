@@ -40,16 +40,9 @@ void main() {
         ..registerQuery<ListTasksQuery, List<TaskItem>>(
           () => ListTasksQueryHandler(repository),
         )
-        ..registerStreamQuery<WatchTasksQuery, List<TaskItem>>(
-          () => WatchTasksQueryHandler(repository),
-        )
         ..registerEvent<TaskCreatedEvent>(() => notificationHandler)
         ..registerEvent<TaskCreatedEvent>(() => TaskCreatedAuditHandler(auditLogger))
         ..registerEvent<TaskCompletedEvent>(() => TaskCompletedAuditHandler(auditLogger));
-    });
-
-    tearDown(() {
-      repository.dispose();
     });
 
     test('executes command, triggers middleware and publishes events', () async {
@@ -99,25 +92,13 @@ void main() {
       expect(auditLogger.auditLogs, contains('[AUDIT] Completed task $taskId'));
     });
 
-    test('watches real-time task stream via StreamQuery', () async {
-      final stream = dispatcher.streamQuery(const WatchTasksQuery());
-      final emissions = <int>[];
-
-      final sub = stream.listen((tasks) {
-        emissions.add(tasks.length);
-      });
-
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-
+    test('queries list of all tasks', () async {
       await dispatcher.command(CreateTaskCommand('Task 1'));
-      await Future<void>.delayed(const Duration(milliseconds: 10));
-
       await dispatcher.command(CreateTaskCommand('Task 2'));
-      await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      expect(emissions, equals([0, 1, 2]));
-
-      await sub.cancel();
+      final tasks = await dispatcher.query(const ListTasksQuery());
+      expect(tasks.length, 2);
+      expect(tasks.map((t) => t.title), containsAll(['Task 1', 'Task 2']));
     });
   });
 }

@@ -14,19 +14,6 @@ class PingQueryHandler implements QueryHandler<PingQuery, String> {
   Future<String> execute(PingQuery query) async => query.message;
 }
 
-class CountStreamQuery implements StreamQuery<int> {
-  CountStreamQuery(this.count);
-  final int count;
-}
-
-class CountStreamQueryHandler
-    implements StreamQueryHandler<CountStreamQuery, int> {
-  @override
-  Stream<int> execute(CountStreamQuery query) {
-    return Stream.fromIterable(List.generate(query.count, (i) => i + 1));
-  }
-}
-
 class EchoCommand implements Command<int> {
   EchoCommand(this.value);
   final int value;
@@ -153,20 +140,6 @@ void main() {
       );
     });
 
-    test('streamQuery streams values from registered stream query handler', () async {
-      registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new);
-
-      final stream = dispatcher.streamQuery(CountStreamQuery(3));
-      expect(await stream.toList(), [1, 2, 3]);
-    });
-
-    test('streamQuery throws HandlerNotFoundException when handler is missing', () {
-      expect(
-        () => dispatcher.streamQuery(CountStreamQuery(3)),
-        throwsA(isA<HandlerNotFoundException>()),
-      );
-    });
-
     test('publish broadcasts to multiple registered event handlers', () async {
       final log = <String>[];
       registry.registerEvent<EchoedEvent>(() => RecordingHandler('first', log));
@@ -198,12 +171,6 @@ void main() {
       registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
       expect(
         () => registry.registerQuery<PingQuery, String>(PingQueryHandler.new),
-        throwsA(isA<DuplicateHandlerException>()),
-      );
-
-      registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new);
-      expect(
-        () => registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new),
         throwsA(isA<DuplicateHandlerException>()),
       );
     });

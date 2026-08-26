@@ -18,10 +18,11 @@ class CreateTaskCommandHandler
 
   final TaskRepository _repository;
   final EventPublisher _publisher;
+  static int _idCounter = 0;
 
   @override
   Future<String> execute(CreateTaskCommand command) async {
-    final taskId = 'TASK-${DateTime.now().millisecondsSinceEpoch}';
+    final taskId = 'TASK-${++_idCounter}';
     final task = TaskItem(id: taskId, title: command.title);
     _repository.save(task);
     await _publisher.publish(TaskCreatedEvent(taskId, command.title));
@@ -85,23 +86,6 @@ class ListTasksQueryHandler
   @override
   Future<List<TaskItem>> execute(ListTasksQuery query) async {
     return _repository.findAll();
-  }
-}
-
-// --- Stream Query ---
-
-class WatchTasksQuery extends StreamQuery<List<TaskItem>> {
-  const WatchTasksQuery();
-}
-
-class WatchTasksQueryHandler
-    implements StreamQueryHandler<WatchTasksQuery, List<TaskItem>> {
-  WatchTasksQueryHandler(this._repository);
-  final TaskRepository _repository;
-
-  @override
-  Stream<List<TaskItem>> execute(WatchTasksQuery query) {
-    return _repository.watchTasks();
   }
 }
 

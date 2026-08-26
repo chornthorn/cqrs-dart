@@ -1,7 +1,6 @@
 import '../contracts/command.dart';
 import '../contracts/event.dart';
 import '../contracts/query.dart';
-import '../contracts/stream_query.dart';
 import '../exceptions/cqrs_exceptions.dart';
 import '../pipeline/middleware.dart';
 import '../pipeline/pipeline_runner.dart';
@@ -72,21 +71,6 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
       middlewares: _queryMiddlewares,
       handler: () => handler.execute(query),
     );
-  }
-
-  @override
-  Stream<TResult>
-      streamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
-    TStreamQuery query,
-  ) {
-    final handler = _registry.resolveStreamQuery<TStreamQuery, TResult>(
-      messageType: query.runtimeType,
-    );
-    if (handler == null) {
-      throw HandlerNotFoundException(query.runtimeType);
-    }
-
-    return handler.execute(query);
   }
 
   @override

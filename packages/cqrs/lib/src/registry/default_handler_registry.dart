@@ -1,18 +1,13 @@
 import '../contracts/command.dart';
 import '../contracts/event.dart';
 import '../contracts/query.dart';
-import '../contracts/stream_query.dart';
 import '../exceptions/cqrs_exceptions.dart';
 import 'handler_registry.dart';
 
-/// Default in-process implementation of [HandlerRegistry].
+/// Default in-memory implementation of [HandlerRegistry].
 class DefaultHandlerRegistry implements HandlerRegistry {
-  /// Creates a new, empty [DefaultHandlerRegistry].
-  DefaultHandlerRegistry();
-
   final Map<Type, HandlerFactory<dynamic>> _commandHandlers = {};
   final Map<Type, HandlerFactory<dynamic>> _queryHandlers = {};
-  final Map<Type, HandlerFactory<dynamic>> _streamQueryHandlers = {};
   final Map<Type, List<HandlerFactory<dynamic>>> _eventHandlers = {};
 
   @override
@@ -36,16 +31,6 @@ class DefaultHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  void registerStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
-    HandlerFactory<StreamQueryHandler<TStreamQuery, TResult>> factory,
-  ) {
-    if (_streamQueryHandlers.containsKey(TStreamQuery)) {
-      throw DuplicateHandlerException(TStreamQuery);
-    }
-    _streamQueryHandlers[TStreamQuery] = factory;
-  }
-
-  @override
   void registerEvent<TEvent extends DomainEvent>(
     HandlerFactory<EventHandler<TEvent>> factory,
   ) {
@@ -54,7 +39,9 @@ class DefaultHandlerRegistry implements HandlerRegistry {
 
   @override
   CommandHandler<TCommand, TResult>?
-      resolveCommand<TCommand extends Command<TResult>, TResult>({Type? messageType}) {
+      resolveCommand<TCommand extends Command<TResult>, TResult>({
+    Type? messageType,
+  }) {
     final type = messageType ?? TCommand;
     final factory = _commandHandlers[type];
     if (factory == null) return null;
@@ -63,7 +50,9 @@ class DefaultHandlerRegistry implements HandlerRegistry {
 
   @override
   QueryHandler<TQuery, TResult>?
-      resolveQuery<TQuery extends Query<TResult>, TResult>({Type? messageType}) {
+      resolveQuery<TQuery extends Query<TResult>, TResult>({
+    Type? messageType,
+  }) {
     final type = messageType ?? TQuery;
     final factory = _queryHandlers[type];
     if (factory == null) return null;
@@ -71,16 +60,9 @@ class DefaultHandlerRegistry implements HandlerRegistry {
   }
 
   @override
-  StreamQueryHandler<TStreamQuery, TResult>?
-      resolveStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>({Type? messageType}) {
-    final type = messageType ?? TStreamQuery;
-    final factory = _streamQueryHandlers[type];
-    if (factory == null) return null;
-    return factory() as StreamQueryHandler<TStreamQuery, TResult>;
-  }
-
-  @override
-  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({Type? eventType}) {
+  List<EventHandler<TEvent>> resolveEvents<TEvent extends DomainEvent>({
+    Type? eventType,
+  }) {
     final type = eventType ?? TEvent;
     final factories = _eventHandlers[type];
     if (factories == null || factories.isEmpty) return const [];
@@ -93,7 +75,6 @@ class DefaultHandlerRegistry implements HandlerRegistry {
   void clear() {
     _commandHandlers.clear();
     _queryHandlers.clear();
-    _streamQueryHandlers.clear();
     _eventHandlers.clear();
   }
 }
