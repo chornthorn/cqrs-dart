@@ -1,10 +1,12 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'gateway_cqrs_module.dart';
+// dart format width=80
 
 // **************************************************************************
 // CqrsGenerator
 // **************************************************************************
+
+import 'package:cqrs/cqrs.dart';
+import 'gateway.dart';
 
 /// Generated registration helper for discovered CQRS handlers (AutoRegisterGatewayCqrs).
 extension AutoRegisterGatewayCqrs on HandlerRegistry {

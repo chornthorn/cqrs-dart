@@ -13,6 +13,7 @@ dependencies:
   code_builder: ^4.10.0
   cqrs:
   glob: ^2.1.0
+  path: ^1.9.0
   source_gen: ^4.1.1
 
 dev_dependencies:

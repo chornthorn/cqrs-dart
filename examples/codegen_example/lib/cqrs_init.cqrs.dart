@@ -1,10 +1,15 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'cqrs_init.dart';
+// dart format width=80
 
 // **************************************************************************
 // CqrsGenerator
 // **************************************************************************
+
+import 'package:cqrs/cqrs.dart';
+import 'features/billing/billing_cqrs_module.dart';
+import 'features/billing/gateway/gateway_cqrs_module.dart';
+import 'features/invoice/invoice_cqrs_module.dart';
+import 'features/orders/orders_cqrs_module.dart';
 
 // ignore_for_file: prefer_initializing_formals
 

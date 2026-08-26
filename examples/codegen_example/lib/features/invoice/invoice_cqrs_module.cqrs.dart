@@ -1,10 +1,12 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'invoice_cqrs_module.dart';
+// dart format width=80
 
 // **************************************************************************
 // CqrsGenerator
 // **************************************************************************
+
+import 'package:cqrs/cqrs.dart';
+import 'invoice.dart';
 
 /// Generated registration helper for discovered CQRS handlers (AutoRegisterInvoiceCqrs).
 extension AutoRegisterInvoiceCqrs on HandlerRegistry {

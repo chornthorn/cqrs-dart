@@ -2,7 +2,6 @@ builders:
   cqrs_generator:
     import: "package:cqrs_codegen/builder.dart"
     builder_factories: ["cqrsBuilder"]
-    build_extensions: {".dart": [".cqrs.g.part"]}
+    build_extensions: {".dart": [".cqrs.dart"]}
     auto_apply: dependents
-    build_to: cache
-    applies_builders: ["source_gen|combining_builder"]
+    build_to: source

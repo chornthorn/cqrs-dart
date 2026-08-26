@@ -1,10 +1,13 @@
 // GENERATED CODE - DO NOT MODIFY BY HAND
-
-part of 'billing_cqrs_module.dart';
+// dart format width=80
 
 // **************************************************************************
 // CqrsGenerator
 // **************************************************************************
+
+import 'package:cqrs/cqrs.dart';
+import 'billing.dart';
+import 'thorn_demo.dart';
 
 /// Generated registration helper for discovered CQRS handlers (AutoRegisterBillingCqrs).
 extension AutoRegisterBillingCqrs on HandlerRegistry {

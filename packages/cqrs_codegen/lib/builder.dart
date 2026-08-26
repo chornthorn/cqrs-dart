@@ -5,8 +5,9 @@ import 'src/generator/cqrs_generator.dart';
 
 /// Builder definition for `build_runner`.
 Builder cqrsBuilder(BuilderOptions options) {
-  return SharedPartBuilder(
-    [const CqrsGenerator()],
-    'cqrs',
+  return LibraryBuilder(
+    const CqrsGenerator(),
+    generatedExtension: '.cqrs.dart',
+    header: '// GENERATED CODE - DO NOT MODIFY BY HAND\n',
   );
 }
