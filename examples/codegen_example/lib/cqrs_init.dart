@@ -15,6 +15,7 @@ export 'features/orders/orders_handler.dart';
 @CqrsInit(
   moduleName: 'App',
   useMicroPackage: true,
+  generateInjectable: false,
   modules: [
     OrdersCqrsModule,
     InvoiceCqrsModule,

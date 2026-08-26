@@ -1,57 +1,22 @@
 import 'package:analyzer/dart/analysis/results.dart';
 import 'package:analyzer/dart/ast/ast.dart';
 import 'package:analyzer/dart/element/element.dart';
-import 'package:analyzer/dart/element/nullability_suffix.dart';
-import 'package:analyzer/dart/element/type.dart';
 import 'package:build/build.dart';
 import 'package:glob/glob.dart';
 import 'package:path/path.dart' as p;
 import 'package:source_gen/source_gen.dart';
 
-import '../annotations/cqrs_annotations.dart';
 import '../model/handler_info.dart';
+import '../model/import_alias_registry.dart';
+import '../model/module_info.dart';
+import '../parser/annotation_parser.dart';
 import '../parser/handler_parser.dart';
-
-/// Information about a discovered micro-package module boundary.
-class DiscoveredModule {
-  const DiscoveredModule({
-    required this.moduleClassName,
-    required this.assetId,
-    required this.directory,
-    required this.packageUri,
-  });
-
-  final String moduleClassName;
-  final AssetId assetId;
-  final String directory;
-  final Uri packageUri;
-}
-
-/// Result of scanning a micro-package or root module directory.
-class ModuleScanResult {
-  const ModuleScanResult({
-    required this.handlers,
-    required this.typeUris,
-    required this.subModules,
-  });
-
-  final List<HandlerInfo> handlers;
-  final Set<Uri> typeUris;
-  final List<DiscoveredModule> subModules;
-}
 
 /// Reusable boundary-aware directory scanner for code generators.
 class LibraryScanner {
   const LibraryScanner({this.parser = const HandlerParser()});
 
   final HandlerParser parser;
-
-  static const _anyChecker = TypeChecker.any([
-    TypeChecker.typeNamed(CqrsInit),
-    TypeChecker.typeNamed(CqrsMicroPackage),
-  ]);
-
-  static const _initChecker = TypeChecker.typeNamed(CqrsInit);
 
   /// Checks if an asset is a generated output file that should be skipped during source scanning.
   static bool _isGenerated(AssetId asset) => asset.path.endsWith('.cqrs.dart');
@@ -70,7 +35,7 @@ class LibraryScanner {
         if (!await buildStep.resolver.isLibrary(asset)) continue;
         final lib = await buildStep.resolver.libraryFor(asset);
         final reader = LibraryReader(lib);
-        final initAnnotated = reader.annotatedWith(_initChecker);
+        final initAnnotated = reader.annotatedWith(AnnotationParser.initChecker);
         if (initAnnotated.isNotEmpty) {
           final ann = initAnnotated.first.annotation;
           final useMicro = ann.peek('useMicroPackage')?.boolValue ?? false;
@@ -120,7 +85,7 @@ class LibraryScanner {
         if (!await buildStep.resolver.isLibrary(asset)) continue;
         final lib = await buildStep.resolver.libraryFor(asset);
         final reader = LibraryReader(lib);
-        final initAnnotated = reader.annotatedWith(_initChecker);
+        final initAnnotated = reader.annotatedWith(AnnotationParser.initChecker);
         if (initAnnotated.isNotEmpty) {
           final ann = initAnnotated.first.annotation;
           final genInjectable =
@@ -163,7 +128,7 @@ class LibraryScanner {
     // 1. Try via source_gen TypeChecker
     try {
       final reader = LibraryReader(lib);
-      final annotated = reader.annotatedWith(_anyChecker);
+      final annotated = reader.annotatedWith(AnnotationParser.anyChecker);
       if (annotated.isNotEmpty) {
         final ann = annotated.first.annotation;
         final typeName = ann.objectValue.type?.element?.name ?? '';
@@ -238,82 +203,12 @@ class LibraryScanner {
     return null;
   }
 
-  /// Extracts the library [Uri] from an [Element] or [LibraryElement].
-  Uri? getLibraryUri(Element? element) {
-    if (element == null) return null;
-    try {
-      final lib = element is LibraryElement ? element : element.library;
-      if (lib != null) {
-        final identifier = lib.identifier;
-        if (identifier.isNotEmpty) {
-          return Uri.tryParse(identifier);
-        }
-      }
-    } catch (_) {}
-    return null;
-  }
-
   /// Converts an [AssetId] into its absolute package URI string.
-  Uri assetToPackageUri(AssetId assetId) {
+  static Uri assetToPackageUri(AssetId assetId) {
     final path = assetId.path.startsWith('lib/')
         ? assetId.path.substring(4)
         : assetId.path;
     return Uri.parse('package:${assetId.package}/$path');
-  }
-
-  /// Formats a [DartType] with its aliased import prefix (e.g. `_i2.PlaceOrderCommand`).
-  String formatTypeWithAlias(DartType? type, Map<Uri, String> importAliases) {
-    if (type == null || type is DynamicType) return 'dynamic';
-    if (type is VoidType) return 'void';
-    if (type is NeverType) return 'Never';
-
-    final element = type.element;
-    final isNullable =
-        type.nullabilitySuffix == NullabilitySuffix.question;
-    final nullability = isNullable ? '?' : '';
-
-    if (element != null) {
-      final uri = getLibraryUri(element);
-      final rawName = element.name ?? type.getDisplayString().replaceAll('?', '');
-      final alias = uri != null ? importAliases[uri] : null;
-      final prefix = (alias != null && uri?.scheme != 'dart') ? '$alias.' : '';
-
-      if (type is ParameterizedType && type.typeArguments.isNotEmpty) {
-        final typeArgs = type.typeArguments
-            .map((arg) => formatTypeWithAlias(arg, importAliases))
-            .join(', ');
-        return '$prefix$rawName<$typeArgs>$nullability';
-      }
-      return '$prefix$rawName$nullability';
-    }
-
-    return type.getDisplayString();
-  }
-
-  /// Collects all library URIs referenced by a [DartType] and its generic arguments.
-  void collectTypeImports(DartType? type, Set<Uri> imports) {
-    if (type == null ||
-        type is DynamicType ||
-        type is VoidType ||
-        type is NeverType) {
-      return;
-    }
-
-    final element = type.element;
-    if (element != null) {
-      final uri = getLibraryUri(element);
-      if (uri != null && uri.scheme != 'dart') {
-        if (!uri.toString().startsWith('package:cqrs/')) {
-          imports.add(uri);
-        }
-      }
-    }
-
-    if (type is ParameterizedType) {
-      for (final typeArg in type.typeArguments) {
-        collectTypeImports(typeArg, imports);
-      }
-    }
   }
 
   /// Scans the directory of [targetAsset] using [buildStep], respecting nested
@@ -408,14 +303,20 @@ class LibraryScanner {
               handlers.add(info);
 
               // Auto-collect type imports for handler class and referenced types
-              final classUri = getLibraryUri(c);
+              final classUri = ImportAliasRegistry.getLibraryUri(c);
               if (classUri != null &&
                   classUri.scheme != 'dart' &&
                   !classUri.toString().startsWith('package:cqrs/')) {
                 typeUris.add(classUri);
               }
-              collectTypeImports(info.messageType, typeUris);
-              collectTypeImports(info.resultType, typeUris);
+              ImportAliasRegistry.collectTypeImports(
+                info.messageType,
+                typeUris,
+              );
+              ImportAliasRegistry.collectTypeImports(
+                info.resultType,
+                typeUris,
+              );
             }
           }
         }
