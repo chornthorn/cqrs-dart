@@ -33,6 +33,7 @@ extension AutoRegisterGatewayCqrs on _i1.HandlerRegistry {
 /// Usage:
 /// ```dart
 /// registry.registerModule(GatewayCqrsModule(
+///   authorizePaymentCommandHandler: AuthorizePaymentCommandHandler.new,
 /// ));
 /// ```
 class GatewayCqrsModule extends _i1.CqrsPackageModule {

@@ -51,9 +51,6 @@ extension AutoRegisterUserCqrs on _i1.HandlerRegistry {
 /// ```dart
 /// registry.registerModule(UserCqrsModule(
 ///   createUserHandler: CreateUserHandler.new,
-///   analyticsHandler: AnalyticsHandler.new,
-///   welcomeEmailHandler: WelcomeEmailHandler.new,
-///   getUserHandler: GetUserHandler.new,
 /// ));
 /// ```
 class UserCqrsModule extends _i1.CqrsPackageModule {

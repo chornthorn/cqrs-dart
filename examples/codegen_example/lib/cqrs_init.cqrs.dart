@@ -20,9 +20,6 @@ import 'package:codegen_example/features/orders/orders_handler.dart' as _i5;
 /// ```dart
 /// registry.registerModule(AppCqrsModule(
 ///   billingCqrsModule: BillingCqrsModule(...),
-///   gatewayCqrsModule: GatewayCqrsModule(...),
-///   invoiceCqrsModule: InvoiceCqrsModule(...),
-///   ordersCqrsModule: OrdersCqrsModule(...),
 /// ));
 /// ```
 class AppCqrsModule extends _i1.CqrsPackageModule {

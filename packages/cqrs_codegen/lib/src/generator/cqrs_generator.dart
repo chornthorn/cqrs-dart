@@ -361,12 +361,11 @@ class CqrsGenerator extends Generator {
     buffer.writeln('/// Usage:');
     buffer.writeln('/// ```dart');
     buffer.writeln('/// registry.registerModule($moduleClassName(');
-    for (final s in subModules) {
+    if (subModules.isNotEmpty) {
+      final s = subModules.first;
       buffer.writeln('///   ${paramName(s.moduleClassName)}: ${s.moduleClassName}(...),');
-    }
-    final requiredHandlers =
-        handlers.where((h) => !h.hasDefaultConstructor || !includeDefaults);
-    for (final h in requiredHandlers) {
+    } else if (handlers.isNotEmpty) {
+      final h = handlers.first;
       buffer.writeln('///   ${h.paramName}: ${h.className}.new,');
     }
     buffer.writeln('/// ));');

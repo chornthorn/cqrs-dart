@@ -33,7 +33,6 @@ extension AutoRegisterOrdersCqrs on _i1.HandlerRegistry {
 /// ```dart
 /// registry.registerModule(OrdersCqrsModule(
 ///   placeOrderCommandHandler: PlaceOrderCommandHandler.new,
-///   getOrderQueryHandler: GetOrderQueryHandler.new,
 /// ));
 /// ```
 class OrdersCqrsModule extends _i1.CqrsPackageModule {

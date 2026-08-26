@@ -18,7 +18,6 @@ import 'package:hello_world/features/user/user_handler.dart' as _i3;
 /// ```dart
 /// registry.registerModule(AppCqrsModule(
 ///   notificationCqrsModule: NotificationCqrsModule(...),
-///   userCqrsModule: UserCqrsModule(...),
 /// ));
 /// ```
 class AppCqrsModule extends _i1.CqrsPackageModule {

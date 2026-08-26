@@ -33,7 +33,6 @@ extension AutoRegisterInvoiceCqrs on _i1.HandlerRegistry {
 /// ```dart
 /// registry.registerModule(InvoiceCqrsModule(
 ///   generateInvoiceCommandHandler: GenerateInvoiceCommandHandler.new,
-///   getInvoiceQueryHandler: GetInvoiceQueryHandler.new,
 /// ));
 /// ```
 class InvoiceCqrsModule extends _i1.CqrsPackageModule {

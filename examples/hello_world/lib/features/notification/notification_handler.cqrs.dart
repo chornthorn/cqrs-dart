@@ -82,11 +82,6 @@ extension AutoRegisterNotificationCqrs on _i1.HandlerRegistry {
 /// ```dart
 /// registry.registerModule(NotificationCqrsModule(
 ///   markNotificationAsReadHandler: MarkNotificationAsReadHandler.new,
-///   sendNotificationHandler: SendNotificationHandler.new,
-///   notificationReadAnalyticsHandler: NotificationReadAnalyticsHandler.new,
-///   pushNotificationDeliveryHandler: PushNotificationDeliveryHandler.new,
-///   getNotificationsHandler: GetNotificationsHandler.new,
-///   getUnreadNotificationCountHandler: GetUnreadNotificationCountHandler.new,
 /// ));
 /// ```
 class NotificationCqrsModule extends _i1.CqrsPackageModule {
