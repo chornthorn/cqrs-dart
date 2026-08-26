@@ -12,9 +12,11 @@ extension AutoRegisterBillingCqrs on HandlerRegistry {
     required ChargeBillingCommandHandler Function() chargeBillingCommandHandler,
     BillingNotificationHandler Function() billingNotificationHandler =
         BillingNotificationHandler.new,
+    FooBarEventHandler Function() fooBarEventHandler = FooBarEventHandler.new,
   }) {
     registerCommand<ChargeBillingCommand, String>(chargeBillingCommandHandler);
     registerEvent<BillingChargedEvent>(billingNotificationHandler);
+    registerEvent<FooBarEvent>(fooBarEventHandler);
   }
 }
 // ignore_for_file: prefer_initializing_formals
@@ -32,18 +34,22 @@ class BillingCqrsModule extends CqrsPackageModule {
     required ChargeBillingCommandHandler Function() chargeBillingCommandHandler,
     BillingNotificationHandler Function() billingNotificationHandler =
         BillingNotificationHandler.new,
+    FooBarEventHandler Function() fooBarEventHandler = FooBarEventHandler.new,
   }) : _chargeBillingCommandHandler = chargeBillingCommandHandler,
        _billingNotificationHandler = billingNotificationHandler,
+       _fooBarEventHandler = fooBarEventHandler,
        super();
 
   final ChargeBillingCommandHandler Function() _chargeBillingCommandHandler;
   final BillingNotificationHandler Function() _billingNotificationHandler;
+  final FooBarEventHandler Function() _fooBarEventHandler;
 
   @override
   void register(HandlerRegistry registry) {
     registry.registerBillingHandlers(
       chargeBillingCommandHandler: _chargeBillingCommandHandler,
       billingNotificationHandler: _billingNotificationHandler,
+      fooBarEventHandler: _fooBarEventHandler,
     );
   }
 }

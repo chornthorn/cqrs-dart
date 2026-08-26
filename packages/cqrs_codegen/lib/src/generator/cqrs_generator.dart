@@ -9,6 +9,7 @@ import 'package:source_gen/source_gen.dart';
 import '../annotations/cqrs_annotations.dart';
 import '../model/handler_info.dart';
 import '../parser/handler_parser.dart';
+import 'library_scanner.dart';
 
 /// Generator that creates [HandlerRegistry] registration extensions
 /// and, for `@CqrsMicroPackage`, also a concrete [CqrsPackageModule] subclass.
@@ -133,60 +134,27 @@ class CqrsGenerator extends Generator {
       moduleClassName = 'GeneratedCqrsModule';
     }
 
-    // Collect all class elements and discover nested micro-package boundaries
+    // Collect all class elements and discover micro-package boundaries via LibraryScanner
     final discoveredModuleClasses = <String>[...moduleTypeNames];
     final handlers = <HandlerInfo>[];
-    final visitedClasses = <String>{};
-    final visitedLibraries = <LibraryElement>{};
+    final bool isRootCompositor = !isMicroPackage && useMicroPackage;
 
-    void inspectClass(ClassElement classElement) {
-      final name = classElement.name;
-      if (name != null && !visitedClasses.contains(name)) {
-        visitedClasses.add(name);
+    const LibraryScanner().scan(
+      rootLibrary: library.element,
+      isRootCompositor: isRootCompositor,
+      findBoundary: useMicroPackage ? _findMicroPackageModuleClass : null,
+      onBoundaryDiscovered: (moduleClass) {
+        if (!discoveredModuleClasses.contains(moduleClass)) {
+          discoveredModuleClasses.add(moduleClass);
+        }
+      },
+      onClass: (classElement) {
         final info = parser.parseClass(classElement);
         if (info != null) {
           handlers.add(info);
         }
-      }
-    }
-
-    final bool isRootCompositor = !isMicroPackage && useMicroPackage;
-
-    void visitLibrary(LibraryElement lib, {bool isRoot = false}) {
-      if (lib.isInSdk || !visitedLibraries.add(lib)) return;
-
-      if (!isRoot) {
-        final nestedModuleClass = _findMicroPackageModuleClass(lib);
-        if (nestedModuleClass != null) {
-          if (isRootCompositor) {
-            // For root init: collect EVERY micro-package module in the entire tree,
-            // even nested under nested, so every module is registered manually in root init.
-            if (!discoveredModuleClasses.contains(nestedModuleClass)) {
-              discoveredModuleClasses.add(nestedModuleClass);
-            }
-          } else {
-            // For a feature micro-package: stop at any nested micro-package boundary
-            // so each micro-package module manages only its own direct handlers.
-            return;
-          }
-        }
-      }
-
-      // Inspect classes in this library if not root compositor
-      if (!isRootCompositor) {
-        for (final c in lib.classes) {
-          inspectClass(c);
-        }
-      }
-
-      // Recursively scan exported libraries
-      for (final exported in lib.exportedLibraries) {
-        visitLibrary(exported, isRoot: false);
-      }
-    }
-
-    // Start traversal from root library
-    visitLibrary(library.element, isRoot: true);
+      },
+    );
 
     // If the user explicitly declared `modules: [...]` in the annotation, use that
     // exact list; otherwise fall back to auto-discovered modules.
