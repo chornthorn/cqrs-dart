@@ -4,20 +4,18 @@ import 'package:test/test.dart';
 
 void main() {
   group('Codegen Example CQRS Flow', () {
-    late HandlerRegistry registry;
     late OrderRepository repository;
-    late DefaultCqrsDispatcher dispatcher;
+    late CqrsDispatcher dispatcher;
     late InvoiceNotificationHandler invoiceHandler;
     late OrderAnalyticsHandler analyticsHandler;
 
     setUp(() {
       repository = OrderRepository();
-      registry = HandlerRegistry();
-      dispatcher = DefaultCqrsDispatcher(registry: registry);
+      dispatcher = CqrsDispatcher();
       invoiceHandler = InvoiceNotificationHandler();
       analyticsHandler = OrderAnalyticsHandler();
 
-      registry.registerGeneratedHandlers(
+      dispatcher.registry.registerGeneratedHandlers(
         placeOrderCommandHandler: () => PlaceOrderCommandHandler(
           repository: repository,
           publisher: dispatcher,

@@ -330,10 +330,19 @@ void main() {
       expect(r2, isA<DefaultHandlerRegistry>());
     });
 
-    test('CqrsDispatcher() returns DefaultCqrsDispatcher with DefaultHandlerRegistry by default', () async {
+    test('CqrsDispatcher() creates internal DefaultHandlerRegistry accessible via dispatcher.registry', () async {
       final dispatcher = CqrsDispatcher();
-      expect(dispatcher, isA<DefaultCqrsDispatcher>());
-      expect((dispatcher as DefaultCqrsDispatcher).registry, isA<DefaultHandlerRegistry>());
+      expect(dispatcher.registry, isA<DefaultHandlerRegistry>());
+
+      dispatcher.registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
+      final result = await dispatcher.query(PingQuery('auto_registry'));
+      expect(result, 'auto_registry');
+    });
+
+    test('CqrsDispatcher(registry: customRegistry) uses provided registry', () async {
+      final customRegistry = DefaultHandlerRegistry();
+      final dispatcher = CqrsDispatcher(registry: customRegistry);
+      expect(dispatcher.registry, same(customRegistry));
     });
   });
 }

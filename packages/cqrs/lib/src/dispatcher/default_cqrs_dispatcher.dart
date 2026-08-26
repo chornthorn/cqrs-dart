@@ -27,7 +27,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   final List<QueryMiddleware> _queryMiddlewares;
   final List<EventMiddleware> _eventMiddlewares;
 
-  /// The underlying handler registry.
+  @override
   HandlerRegistry get registry => _registry;
 
   @override

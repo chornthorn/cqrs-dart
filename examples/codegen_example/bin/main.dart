@@ -3,13 +3,12 @@ import 'package:cqrs/cqrs.dart';
 
 void main() async {
   final repository = OrderRepository();
-  final registry = HandlerRegistry();
-  final dispatcher = CqrsDispatcher(registry: registry);
+  final dispatcher = CqrsDispatcher();
 
   final invoiceHandler = InvoiceNotificationHandler();
   final analyticsHandler = OrderAnalyticsHandler();
 
-  registry.registerGeneratedHandlers(
+  dispatcher.registry.registerGeneratedHandlers(
     placeOrderCommandHandler: () => PlaceOrderCommandHandler(
       repository: repository,
       publisher: dispatcher,

@@ -10,17 +10,13 @@ void main() async {
   final auditLogger = TaskAuditLogHandler();
   final loggingMiddleware = LoggingCommandMiddleware();
 
-  // 2. Pure Dart registry
-  final registry = HandlerRegistry();
-
-  // 3. Pure Dart dispatcher
+  // 2. Dispatcher with internal default registry
   final dispatcher = CqrsDispatcher(
-    registry: registry,
     commandMiddlewares: [loggingMiddleware],
   );
 
-  // 4. Manually register commands, queries, stream queries, and events
-  registry
+  // 3. Register commands, queries, stream queries, and events via dispatcher.registry
+  dispatcher.registry
     ..registerCommand<CreateTaskCommand, String>(
       () => CreateTaskCommandHandler(
         repository: taskRepository,
@@ -46,7 +42,7 @@ void main() async {
     ..registerEvent<TaskCreatedEvent>(() => TaskCreatedAuditHandler(auditLogger))
     ..registerEvent<TaskCompletedEvent>(() => TaskCompletedAuditHandler(auditLogger));
 
-  // 5. Subscribe to reactive StreamQuery
+  // 4. Subscribe to reactive StreamQuery
   final taskStream = dispatcher.streamQuery(const WatchTasksQuery());
   final streamSubscription = taskStream.listen((tasks) {
     print('  [Reactive Stream Update] Total tasks in list: ${tasks.length}');
@@ -55,7 +51,7 @@ void main() async {
   // Small delay for initial stream emission
   await Future<void>.delayed(const Duration(milliseconds: 10));
 
-  // 6. Dispatch Commands
+  // 5. Dispatch Commands
   print('\n-- Step 1: Creating Tasks --');
   final task1Id = await dispatcher.command(
     CreateTaskCommand('Design pure Dart CQRS core'),
@@ -67,7 +63,7 @@ void main() async {
   // Small delay for stream updates
   await Future<void>.delayed(const Duration(milliseconds: 10));
 
-  // 7. Dispatch Queries
+  // 6. Dispatch Queries
   print('\n-- Step 2: Querying Tasks --');
   final task1 = await dispatcher.query(GetTaskByIdQuery(task1Id));
   print('Found task: "${task1?.title}" (Completed: ${task1?.isCompleted})');
@@ -75,14 +71,14 @@ void main() async {
   final allTasks = await dispatcher.query(const ListTasksQuery());
   print('All tasks count: ${allTasks.length}');
 
-  // 8. Complete a Task
+  // 7. Complete a Task
   print('\n-- Step 3: Completing Task --');
   final completed = await dispatcher.command(CompleteTaskCommand(task1Id));
   print('Task completed successfully: $completed');
 
   await Future<void>.delayed(const Duration(milliseconds: 10));
 
-  // 9. Inspect Notifications and Audit Logs (Side effects)
+  // 8. Inspect Notifications and Audit Logs (Side effects)
   print('\n-- Step 4: Side Effects & Handled Events --');
   print('Notifications:');
   for (final note in notificationHandler.notifications) {

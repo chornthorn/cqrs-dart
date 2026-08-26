@@ -46,13 +46,13 @@ dart run build_runner build
 ### 3. Register handlers effortlessly
 
 ```dart
-final registry = HandlerRegistry();
+final dispatcher = CqrsDispatcher();
 
-registry.registerGeneratedHandlers(
+dispatcher.registry.registerGeneratedHandlers(
   placeOrderCommandHandler: () => PlaceOrderCommandHandler(repository, dispatcher),
   getOrderQueryHandler: () => GetOrderQueryHandler(repository),
   // Handlers with zero-arg constructors are provided by default!
 );
 
-final dispatcher = CqrsDispatcher(registry: registry);
+final orderId = await dispatcher.command(PlaceOrderCommand(...));
 ```

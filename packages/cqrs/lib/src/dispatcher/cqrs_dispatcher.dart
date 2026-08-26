@@ -8,11 +8,15 @@ import 'query_dispatcher.dart';
 /// Unified CQRS entry point combining commands, queries, and events.
 abstract interface class CqrsDispatcher
     implements CommandDispatcher, QueryDispatcher, EventPublisher {
-  /// Creates a default [CqrsDispatcher] with optional registry and middlewares.
+  /// Creates a default [CqrsDispatcher] with an internal [DefaultHandlerRegistry]
+  /// (or custom [registry] if provided) and optional middlewares.
   factory CqrsDispatcher({
     HandlerRegistry? registry,
     List<CommandMiddleware>? commandMiddlewares,
     List<QueryMiddleware>? queryMiddlewares,
     List<EventMiddleware>? eventMiddlewares,
   }) = DefaultCqrsDispatcher;
+
+  /// The underlying [HandlerRegistry] where handlers are registered and resolved.
+  HandlerRegistry get registry;
 }

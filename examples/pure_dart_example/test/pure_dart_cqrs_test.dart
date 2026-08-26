@@ -5,26 +5,23 @@ import 'package:test/test.dart';
 void main() {
   group('Pure Dart Manual CQRS Flow', () {
     late TaskRepository repository;
-    late HandlerRegistry registry;
     late LoggingCommandMiddleware middleware;
-    late DefaultCqrsDispatcher dispatcher;
+    late CqrsDispatcher dispatcher;
     late TaskNotificationHandler notificationHandler;
     late TaskAuditLogHandler auditLogger;
 
     setUp(() {
       repository = TaskRepository();
-      registry = HandlerRegistry();
       middleware = LoggingCommandMiddleware();
-      dispatcher = DefaultCqrsDispatcher(
-        registry: registry,
+      dispatcher = CqrsDispatcher(
         commandMiddlewares: [middleware],
       );
 
       notificationHandler = TaskNotificationHandler();
       auditLogger = TaskAuditLogHandler();
 
-      // Manual registration
-      registry
+      // Manual registration directly on dispatcher.registry
+      dispatcher.registry
         ..registerCommand<CreateTaskCommand, String>(
           () => CreateTaskCommandHandler(
             repository: repository,
