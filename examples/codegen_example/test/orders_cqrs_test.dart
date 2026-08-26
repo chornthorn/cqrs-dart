@@ -31,13 +31,13 @@ void main() {
     });
 
     test('dispatches PlaceOrderCommand, persists order, and notifies event listeners', () async {
-      final orderId = await dispatcher.dispatchCommand(
+      final orderId = await dispatcher.command(
         PlaceOrderCommand(item: 'iPhone 16 Pro', amount: 1199.00),
       );
 
       expect(orderId, startsWith('ORD-'));
 
-      final order = await dispatcher.dispatchQuery(GetOrderQuery(orderId));
+      final order = await dispatcher.query(GetOrderQuery(orderId));
       expect(order, isNotNull);
       expect(order!.item, 'iPhone 16 Pro');
       expect(order.amount, 1199.00);
@@ -56,7 +56,7 @@ void main() {
     });
 
     test('returns null when querying non-existent order', () async {
-      final order = await dispatcher.dispatchQuery(GetOrderQuery('non-existent'));
+      final order = await dispatcher.query(GetOrderQuery('non-existent'));
       expect(order, isNull);
     });
   });

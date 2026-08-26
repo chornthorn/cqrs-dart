@@ -1,6 +1,6 @@
 import 'package:cqrs/cqrs.dart';
 
-// Entity
+// Domain Entities
 class Order {
   Order({
     required this.id,
@@ -13,7 +13,6 @@ class Order {
   final double amount;
 }
 
-// In-memory store
 class OrderRepository {
   final Map<String, Order> _orders = {};
 
@@ -22,14 +21,11 @@ class OrderRepository {
   }
 
   Order? findById(String id) => _orders[id];
-
-  List<Order> findAll() => _orders.values.toList();
 }
 
-// Domain Event
+// Events
 class OrderPlacedEvent extends DomainEvent {
   OrderPlacedEvent(this.orderId, this.amount);
-
   final String orderId;
   final double amount;
 }
@@ -37,7 +33,6 @@ class OrderPlacedEvent extends DomainEvent {
 // Command & Handler
 class PlaceOrderCommand extends Command<String> {
   PlaceOrderCommand({required this.item, required this.amount});
-
   final String item;
   final double amount;
 }
@@ -61,7 +56,7 @@ class PlaceOrderCommandHandler
       amount: command.amount,
     );
     _repository.save(order);
-    await _publisher.publishEvent(OrderPlacedEvent(orderId, command.amount));
+    await _publisher.publish(OrderPlacedEvent(orderId, command.amount));
     return orderId;
   }
 }
@@ -69,7 +64,6 @@ class PlaceOrderCommandHandler
 // Query & Handler
 class GetOrderQuery extends Query<Order?> {
   GetOrderQuery(this.orderId);
-
   final String orderId;
 }
 
@@ -84,7 +78,7 @@ class GetOrderQueryHandler implements QueryHandler<GetOrderQuery, Order?> {
   }
 }
 
-// Event Handlers
+// Event Handlers (0-argument constructors)
 class InvoiceNotificationHandler implements EventHandler<OrderPlacedEvent> {
   final List<String> sentInvoices = [];
 

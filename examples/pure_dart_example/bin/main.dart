@@ -47,7 +47,7 @@ void main() async {
     ..registerEvent<TaskCompletedEvent>(() => TaskCompletedAuditHandler(auditLogger));
 
   // 5. Subscribe to reactive StreamQuery
-  final taskStream = dispatcher.dispatchStreamQuery(const WatchTasksQuery());
+  final taskStream = dispatcher.streamQuery(const WatchTasksQuery());
   final streamSubscription = taskStream.listen((tasks) {
     print('  [Reactive Stream Update] Total tasks in list: ${tasks.length}');
   });
@@ -57,10 +57,10 @@ void main() async {
 
   // 6. Dispatch Commands
   print('\n-- Step 1: Creating Tasks --');
-  final task1Id = await dispatcher.dispatchCommand(
+  final task1Id = await dispatcher.command(
     CreateTaskCommand('Design pure Dart CQRS core'),
   );
-  await dispatcher.dispatchCommand(
+  await dispatcher.command(
     CreateTaskCommand('Write pure manual registration example'),
   );
 
@@ -69,15 +69,15 @@ void main() async {
 
   // 7. Dispatch Queries
   print('\n-- Step 2: Querying Tasks --');
-  final task1 = await dispatcher.dispatchQuery(GetTaskByIdQuery(task1Id));
+  final task1 = await dispatcher.query(GetTaskByIdQuery(task1Id));
   print('Found task: "${task1?.title}" (Completed: ${task1?.isCompleted})');
 
-  final allTasks = await dispatcher.dispatchQuery(const ListTasksQuery());
+  final allTasks = await dispatcher.query(const ListTasksQuery());
   print('All tasks count: ${allTasks.length}');
 
   // 8. Complete a Task
   print('\n-- Step 3: Completing Task --');
-  final completed = await dispatcher.dispatchCommand(CompleteTaskCommand(task1Id));
+  final completed = await dispatcher.command(CompleteTaskCommand(task1Id));
   print('Task completed successfully: $completed');
 
   await Future<void>.delayed(const Duration(milliseconds: 10));

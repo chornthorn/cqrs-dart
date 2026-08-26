@@ -79,13 +79,13 @@ void main() async {
   final dispatcher = CqrsDispatcher(registry: registry);
 
   // Dispatch command
-  final userId = await dispatcher.dispatchCommand(CreateUserCommand('hello@example.com'));
+  final userId = await dispatcher.command(CreateUserCommand('hello@example.com'));
 
   // Dispatch query
-  final user = await dispatcher.dispatchQuery(GetUserQuery(userId));
+  final user = await dispatcher.query(GetUserQuery(userId));
 
   // Publish event
-  await dispatcher.publishEvent(UserCreatedEvent(userId));
+  await dispatcher.publish(UserCreatedEvent(userId));
 }
 ```
 

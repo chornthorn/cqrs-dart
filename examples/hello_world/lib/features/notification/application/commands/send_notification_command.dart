@@ -18,28 +18,26 @@ class SendNotificationCommand extends Command<String> {
 @Injectable(as: CommandHandler<SendNotificationCommand, String>)
 class SendNotificationHandler
     implements CommandHandler<SendNotificationCommand, String> {
-  SendNotificationHandler(this._dispatcher, this._repository);
+  SendNotificationHandler(this._dispatcher, this._notifications);
 
   final CqrsDispatcher _dispatcher;
-  final NotificationRepository _repository;
+  final NotificationRepository _notifications;
 
   @override
   Future<String> execute(SendNotificationCommand command) async {
     print('NotificationService: Creating notification "${command.title}"');
-    final notification = _repository.create(
+    final notif = _notifications.create(
       recipientId: command.recipientId,
       title: command.title,
       message: command.message,
     );
-
-    await _dispatcher.publishEvent(
+    await _dispatcher.publish(
       NotificationSentEvent(
-        notificationId: notification.id,
-        recipientId: notification.recipientId,
-        title: notification.title,
+        notificationId: notif.id,
+        recipientId: notif.recipientId,
+        title: notif.title,
       ),
     );
-
-    return notification.id;
+    return notif.id;
   }
 }

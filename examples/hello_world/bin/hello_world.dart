@@ -11,12 +11,12 @@ void main() async {
   print('--- App Started ---');
 
   // 1. User Feature: Command & Query
-  await dispatcher.dispatchCommand(CreateUserCommand('test@example.com'));
-  final user = await dispatcher.dispatchQuery(GetUserQuery('USER-123'));
+  await dispatcher.command(CreateUserCommand('test@example.com'));
+  final user = await dispatcher.query(GetUserQuery('USER-123'));
   print('Queried user: ${user?.email}');
 
   // 2. Notification Feature: Command & Query
-  final notifId = await dispatcher.dispatchCommand(
+  final notifId = await dispatcher.command(
     SendNotificationCommand(
       recipientId: 'USER-123',
       title: 'Welcome to dart_cqrs!',
@@ -24,13 +24,13 @@ void main() async {
     ),
   );
 
-  final notifications = await dispatcher.dispatchQuery(
+  final notifications = await dispatcher.query(
     GetNotificationsQuery('USER-123'),
   );
   print('Total notifications: ${notifications.length}');
 
-  await dispatcher.dispatchCommand(MarkNotificationAsReadCommand(notifId));
-  final unreadCount = await dispatcher.dispatchQuery(
+  await dispatcher.command(MarkNotificationAsReadCommand(notifId));
+  final unreadCount = await dispatcher.query(
     GetUnreadNotificationCountQuery('USER-123'),
   );
   print('Unread notifications remaining: $unreadCount');

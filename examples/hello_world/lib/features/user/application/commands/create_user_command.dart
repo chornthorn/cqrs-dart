@@ -20,7 +20,7 @@ class CreateUserHandler implements CommandHandler<CreateUserCommand, bool> {
   Future<bool> execute(CreateUserCommand command) async {
     print('Database: Creating user ${command.email}');
     final user = _users.create(email: command.email);
-    await _dispatcher.publishEvent(UserCreatedEvent(user.id));
+    await _dispatcher.publish(UserCreatedEvent(user.id));
     return true;
   }
 }

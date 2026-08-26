@@ -56,7 +56,7 @@ void main() {
     });
 
     test('executes command, triggers middleware and publishes events', () async {
-      final taskId = await dispatcher.dispatchCommand(
+      final taskId = await dispatcher.command(
         CreateTaskCommand('Write Unit Tests'),
       );
 
@@ -86,16 +86,16 @@ void main() {
     });
 
     test('completes task and queries updated status', () async {
-      final taskId = await dispatcher.dispatchCommand(
+      final taskId = await dispatcher.command(
         CreateTaskCommand('Review PR'),
       );
 
-      final completed = await dispatcher.dispatchCommand(
+      final completed = await dispatcher.command(
         CompleteTaskCommand(taskId),
       );
       expect(completed, isTrue);
 
-      final queried = await dispatcher.dispatchQuery(GetTaskByIdQuery(taskId));
+      final queried = await dispatcher.query(GetTaskByIdQuery(taskId));
       expect(queried, isNotNull);
       expect(queried!.isCompleted, isTrue);
 
@@ -103,7 +103,7 @@ void main() {
     });
 
     test('watches real-time task stream via StreamQuery', () async {
-      final stream = dispatcher.dispatchStreamQuery(const WatchTasksQuery());
+      final stream = dispatcher.streamQuery(const WatchTasksQuery());
       final emissions = <int>[];
 
       final sub = stream.listen((tasks) {
@@ -112,10 +112,10 @@ void main() {
 
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      await dispatcher.dispatchCommand(CreateTaskCommand('Task 1'));
+      await dispatcher.command(CreateTaskCommand('Task 1'));
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
-      await dispatcher.dispatchCommand(CreateTaskCommand('Task 2'));
+      await dispatcher.command(CreateTaskCommand('Task 2'));
       await Future<void>.delayed(const Duration(milliseconds: 10));
 
       expect(emissions, equals([0, 1, 2]));

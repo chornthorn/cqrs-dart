@@ -31,7 +31,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   HandlerRegistry get registry => _registry;
 
   @override
-  Future<TResult> dispatchCommand<TCommand extends Command<TResult>, TResult>(
+  Future<TResult> command<TCommand extends Command<TResult>, TResult>(
     TCommand command,
   ) {
     final handler = _registry.resolveCommand<TCommand, TResult>(
@@ -53,7 +53,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   }
 
   @override
-  Future<TResult> dispatchQuery<TQuery extends Query<TResult>, TResult>(
+  Future<TResult> query<TQuery extends Query<TResult>, TResult>(
     TQuery query,
   ) {
     final handler = _registry.resolveQuery<TQuery, TResult>(
@@ -76,7 +76,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
 
   @override
   Stream<TResult>
-      dispatchStreamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
+      streamQuery<TStreamQuery extends StreamQuery<TResult>, TResult>(
     TStreamQuery query,
   ) {
     final handler = _registry.resolveStreamQuery<TStreamQuery, TResult>(
@@ -90,7 +90,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   }
 
   @override
-  Future<void> publishEvent<TEvent extends DomainEvent>(TEvent event) {
+  Future<void> publish<TEvent extends DomainEvent>(TEvent event) {
     final handlers = _registry.resolveEvents<TEvent>(
       eventType: event.runtimeType,
     );
@@ -116,7 +116,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
   @override
   Future<void> publishAll(Iterable<DomainEvent> events) async {
     for (final event in events) {
-      await publishEvent(event);
+      await publish(event);
     }
   }
 }

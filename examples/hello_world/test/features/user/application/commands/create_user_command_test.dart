@@ -11,7 +11,7 @@ class MockDispatcher extends DefaultCqrsDispatcher {
   final List<DomainEvent> publishedEvents = [];
 
   @override
-  Future<void> publishEvent<TEvent extends DomainEvent>(TEvent event) async {
+  Future<void> publish<TEvent extends DomainEvent>(TEvent event) async {
     publishedEvents.add(event);
   }
 }

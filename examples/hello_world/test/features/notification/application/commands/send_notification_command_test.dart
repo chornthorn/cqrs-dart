@@ -8,7 +8,7 @@ class MockDispatcher extends DefaultCqrsDispatcher {
   final List<DomainEvent> publishedEvents = [];
 
   @override
-  Future<void> publishEvent<TEvent extends DomainEvent>(TEvent event) async {
+  Future<void> publish<TEvent extends DomainEvent>(TEvent event) async {
     publishedEvents.add(event);
   }
 }
@@ -29,19 +29,18 @@ void main() {
       final command = SendNotificationCommand(
         recipientId: 'USER-1',
         title: 'New Message',
-        message: 'Hello World',
+        message: 'You got mail',
       );
 
       final notifId = await handler.execute(command);
       expect(notifId, 'NOTIF-1');
 
-      final created = repository.findById('NOTIF-1');
-      expect(created, isNotNull);
-      expect(created!.title, 'New Message');
+      final notif = repository.findById('NOTIF-1');
+      expect(notif, isNotNull);
+      expect(notif!.title, 'New Message');
 
       expect(mockDispatcher.publishedEvents.length, 1);
-      final event =
-          mockDispatcher.publishedEvents.first as NotificationSentEvent;
+      final event = mockDispatcher.publishedEvents.first as NotificationSentEvent;
       expect(event.notificationId, 'NOTIF-1');
       expect(event.recipientId, 'USER-1');
       expect(event.title, 'New Message');

@@ -24,7 +24,7 @@ class CreateTaskCommandHandler
     final taskId = 'TASK-${DateTime.now().millisecondsSinceEpoch}';
     final task = TaskItem(id: taskId, title: command.title);
     _repository.save(task);
-    await _publisher.publishEvent(TaskCreatedEvent(taskId, command.title));
+    await _publisher.publish(TaskCreatedEvent(taskId, command.title));
     return taskId;
   }
 }
@@ -50,7 +50,7 @@ class CompleteTaskCommandHandler
     if (existing == null) return false;
 
     _repository.save(existing.copyWith(isCompleted: true));
-    await _publisher.publishEvent(TaskCompletedEvent(command.taskId));
+    await _publisher.publish(TaskCompletedEvent(command.taskId));
     return true;
   }
 }

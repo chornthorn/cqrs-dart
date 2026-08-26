@@ -22,7 +22,7 @@ void main() async {
   );
 
   print('--- Placing Order ---');
-  final orderId = await dispatcher.dispatchCommand(
+  final orderId = await dispatcher.command(
     PlaceOrderCommand(item: 'MacBook Pro M3', amount: 1999.99),
   );
   print('Created Order ID: $orderId');
@@ -36,7 +36,7 @@ void main() async {
   }
 
   print('\n--- Querying Order ---');
-  final order = await dispatcher.dispatchQuery(GetOrderQuery(orderId));
+  final order = await dispatcher.query(GetOrderQuery(orderId));
   if (order != null) {
     print('Found order: ${order.item} for \$${order.amount}');
   }

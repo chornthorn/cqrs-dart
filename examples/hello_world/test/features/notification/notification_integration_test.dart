@@ -18,7 +18,7 @@ void main() {
     () async {
       final dispatcher = getIt<CqrsDispatcher>();
 
-      final notificationId = await dispatcher.dispatchCommand(
+      final notificationId = await dispatcher.command(
         SendNotificationCommand(
           recipientId: 'USER-123',
           title: 'Welcome!',
@@ -31,14 +31,14 @@ void main() {
       final log = getIt<NotificationLog>();
       expect(log.entries, contains('push:USER-123:NOTIF-1'));
 
-      final notifications = await dispatcher.dispatchQuery(
+      final notifications = await dispatcher.query(
         GetNotificationsQuery('USER-123'),
       );
       expect(notifications.length, 1);
       expect(notifications.first.title, 'Welcome!');
       expect(notifications.first.isRead, isFalse);
 
-      final unreadCount = await dispatcher.dispatchQuery(
+      final unreadCount = await dispatcher.query(
         GetUnreadNotificationCountQuery('USER-123'),
       );
       expect(unreadCount, 1);
@@ -50,7 +50,7 @@ void main() {
     () async {
       final dispatcher = getIt<CqrsDispatcher>();
 
-      final notificationId = await dispatcher.dispatchCommand(
+      final notificationId = await dispatcher.command(
         SendNotificationCommand(
           recipientId: 'USER-456',
           title: 'Security Alert',
@@ -58,7 +58,7 @@ void main() {
         ),
       );
 
-      final success = await dispatcher.dispatchCommand(
+      final success = await dispatcher.command(
         MarkNotificationAsReadCommand(notificationId),
       );
       expect(success, isTrue);
@@ -66,7 +66,7 @@ void main() {
       final log = getIt<NotificationLog>();
       expect(log.entries, contains('read:USER-456:$notificationId'));
 
-      final unreadCount = await dispatcher.dispatchQuery(
+      final unreadCount = await dispatcher.query(
         GetUnreadNotificationCountQuery('USER-456'),
       );
       expect(unreadCount, 0);

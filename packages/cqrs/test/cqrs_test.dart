@@ -38,7 +38,7 @@ class EchoCommandHandler implements CommandHandler<EchoCommand, int> {
 
   @override
   Future<int> execute(EchoCommand command) async {
-    await _dispatcher.publishEvent(EchoedEvent(command.value));
+    await _dispatcher.publish(EchoedEvent(command.value));
     return command.value;
   }
 }
@@ -122,62 +122,62 @@ void main() {
       dispatcher = DefaultCqrsDispatcher(registry: registry);
     });
 
-    test('dispatchQuery executes registered query handler', () async {
+    test('query executes registered query handler', () async {
       registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
 
-      final result = await dispatcher.dispatchQuery(PingQuery('pong'));
+      final result = await dispatcher.query(PingQuery('pong'));
       expect(result, 'pong');
     });
 
-    test('dispatchQuery throws HandlerNotFoundException when query handler is missing', () async {
+    test('query throws HandlerNotFoundException when query handler is missing', () async {
       expect(
-        () => dispatcher.dispatchQuery(PingQuery('hello')),
+        () => dispatcher.query(PingQuery('hello')),
         throwsA(isA<HandlerNotFoundException>()),
       );
     });
 
-    test('dispatchCommand executes registered command handler and emits event', () async {
+    test('command executes registered command handler and emits event', () async {
       registry.registerCommand<EchoCommand, int>(() => EchoCommandHandler(dispatcher));
       final received = <String>[];
       registry.registerEvent<EchoedEvent>(() => RecordingHandler('a', received));
 
-      final result = await dispatcher.dispatchCommand(EchoCommand(42));
+      final result = await dispatcher.command(EchoCommand(42));
       expect(result, 42);
       expect(received, ['a:42']);
     });
 
-    test('dispatchCommand throws HandlerNotFoundException when command handler is missing', () async {
+    test('command throws HandlerNotFoundException when command handler is missing', () async {
       expect(
-        () => dispatcher.dispatchCommand(EchoCommand(1)),
+        () => dispatcher.command(EchoCommand(1)),
         throwsA(isA<HandlerNotFoundException>()),
       );
     });
 
-    test('dispatchStreamQuery streams values from registered stream query handler', () async {
+    test('streamQuery streams values from registered stream query handler', () async {
       registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new);
 
-      final stream = dispatcher.dispatchStreamQuery(CountStreamQuery(3));
+      final stream = dispatcher.streamQuery(CountStreamQuery(3));
       expect(await stream.toList(), [1, 2, 3]);
     });
 
-    test('dispatchStreamQuery throws HandlerNotFoundException when handler is missing', () {
+    test('streamQuery throws HandlerNotFoundException when handler is missing', () {
       expect(
-        () => dispatcher.dispatchStreamQuery(CountStreamQuery(3)),
+        () => dispatcher.streamQuery(CountStreamQuery(3)),
         throwsA(isA<HandlerNotFoundException>()),
       );
     });
 
-    test('publishEvent broadcasts to multiple registered event handlers', () async {
+    test('publish broadcasts to multiple registered event handlers', () async {
       final log = <String>[];
       registry.registerEvent<EchoedEvent>(() => RecordingHandler('first', log));
       registry.registerEvent<EchoedEvent>(() => RecordingHandler('second', log));
 
-      await dispatcher.publishEvent(EchoedEvent(7));
+      await dispatcher.publish(EchoedEvent(7));
       expect(log, containsAllInOrder(['first:7', 'second:7']));
     });
 
-    test('publishEvent does nothing when no handler is registered for event', () async {
-      expect(() async => dispatcher.publishEvent(UnusedEvent()), returnsNormally);
+    test('publish does nothing when no handler is registered for event', () async {
+      expect(() async => dispatcher.publish(UnusedEvent()), returnsNormally);
     });
 
     test('publishAll publishes all events in sequence', () async {
@@ -231,7 +231,7 @@ void main() {
         ],
       );
 
-      final result = await dispatcher.dispatchCommand(EchoCommand(10));
+      final result = await dispatcher.command(EchoCommand(10));
       expect(result, 10);
       expect(log, [
         'm1:before:EchoCommand',
@@ -254,7 +254,7 @@ void main() {
         ],
       );
 
-      final result = await dispatcher.dispatchQuery(PingQuery('test'));
+      final result = await dispatcher.query(PingQuery('test'));
       expect(result, 'test');
       expect(log, [
         'qm1:before:PingQuery',
@@ -276,7 +276,7 @@ void main() {
         ],
       );
 
-      await dispatcher.publishEvent(EchoedEvent(5));
+      await dispatcher.publish(EchoedEvent(5));
       expect(log, [
         'em1:before:EchoedEvent',
         'handler:5',
@@ -296,7 +296,7 @@ void main() {
       );
 
       final dispatcher = DefaultCqrsDispatcher(registry: resolverRegistry);
-      final result = await dispatcher.dispatchQuery(PingQuery('resolver_test'));
+      final result = await dispatcher.query(PingQuery('resolver_test'));
       expect(result, 'resolver_test');
     });
 
@@ -315,7 +315,7 @@ void main() {
       );
 
       final dispatcher = CqrsDispatcher(registry: resolverRegistry);
-      await dispatcher.publishEvent(EchoedEvent(99));
+      await dispatcher.publish(EchoedEvent(99));
 
       expect(log, unorderedEquals(['x:99', 'y:99']));
     });

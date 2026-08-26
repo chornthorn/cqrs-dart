@@ -16,9 +16,9 @@ void main() {
   });
 
   test(
-    'dispatchCommand creates a user and notifies every event handler',
+    'command creates a user and notifies every event handler',
     () async {
-      final created = await getIt<CqrsDispatcher>().dispatchCommand(
+      final created = await getIt<CqrsDispatcher>().command(
         CreateUserCommand('test@example.com'),
       );
 
@@ -30,11 +30,11 @@ void main() {
     },
   );
 
-  test('dispatchQuery returns the user written by the command', () async {
-    await getIt<CqrsDispatcher>().dispatchCommand(
+  test('query returns the user written by the command', () async {
+    await getIt<CqrsDispatcher>().command(
       CreateUserCommand('test@example.com'),
     );
-    final user = await getIt<CqrsDispatcher>().dispatchQuery(
+    final user = await getIt<CqrsDispatcher>().query(
       GetUserQuery('USER-123'),
     );
 
@@ -43,15 +43,15 @@ void main() {
     expect(user.email, 'test@example.com');
   });
 
-  test('dispatchQuery returns null when the user does not exist', () async {
-    final user = await getIt<CqrsDispatcher>().dispatchQuery(
+  test('query returns null when the user does not exist', () async {
+    final user = await getIt<CqrsDispatcher>().query(
       GetUserQuery('missing'),
     );
 
     expect(user, isNull);
   });
 
-  test('publishEvent is a no-op when no handlers are registered', () async {
-    await getIt<CqrsDispatcher>().publishEvent(UnusedEvent());
+  test('publish is a no-op when no handlers are registered', () async {
+    await getIt<CqrsDispatcher>().publish(UnusedEvent());
   });
 }

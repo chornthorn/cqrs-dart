@@ -1,7 +1,7 @@
-import 'package:injectable/injectable.dart';
 import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/notification/domain/events/notification_read_event.dart';
 import 'package:hello_world/features/notification/infrastructure/notification_repository.dart';
+import 'package:injectable/injectable.dart';
 
 class MarkNotificationAsReadCommand extends Command<bool> {
   MarkNotificationAsReadCommand(this.notificationId);
@@ -12,23 +12,25 @@ class MarkNotificationAsReadCommand extends Command<bool> {
 @Injectable(as: CommandHandler<MarkNotificationAsReadCommand, bool>)
 class MarkNotificationAsReadHandler
     implements CommandHandler<MarkNotificationAsReadCommand, bool> {
-  MarkNotificationAsReadHandler(this._dispatcher, this._repository);
+  MarkNotificationAsReadHandler(this._dispatcher, this._notifications);
 
   final CqrsDispatcher _dispatcher;
-  final NotificationRepository _repository;
+  final NotificationRepository _notifications;
 
   @override
   Future<bool> execute(MarkNotificationAsReadCommand command) async {
-    final updated = _repository.markAsRead(command.notificationId);
-    if (updated) {
-      final notif = _repository.findById(command.notificationId)!;
-      await _dispatcher.publishEvent(
+    final existing = _notifications.findById(command.notificationId);
+    if (existing == null) return false;
+
+    final success = _notifications.markAsRead(command.notificationId);
+    if (success) {
+      await _dispatcher.publish(
         NotificationReadEvent(
-          notificationId: notif.id,
-          recipientId: notif.recipientId,
+          notificationId: command.notificationId,
+          recipientId: existing.recipientId,
         ),
       );
     }
-    return updated;
+    return success;
   }
 }
