@@ -2,6 +2,8 @@ import '../contracts/command.dart';
 import '../contracts/event.dart';
 import '../contracts/query.dart';
 import '../contracts/stream_query.dart';
+import 'default_handler_registry.dart';
+import 'resolver_handler_registry.dart';
 
 /// Factory function to instantiate a handler.
 typedef HandlerFactory<T> = T Function();
@@ -11,6 +13,20 @@ typedef HandlerResolver = Object? Function(Type handlerType);
 
 /// Contract for registering and resolving CQRS handlers.
 abstract interface class HandlerRegistry {
+  /// Creates a [DefaultHandlerRegistry].
+  factory HandlerRegistry() = DefaultHandlerRegistry;
+
+  /// Creates a [DefaultHandlerRegistry].
+  factory HandlerRegistry.defaultRegistry() = DefaultHandlerRegistry;
+
+  /// Creates a [HandlerRegistry] backed by an external resolver function (e.g., GetIt, Riverpod, Kiwi).
+  factory HandlerRegistry.resolver({
+    required HandlerResolver resolver,
+    Iterable<dynamic> Function(Type type)? multiResolver,
+    List<EventHandler<TEvent>> Function<TEvent extends DomainEvent>()?
+        eventResolver,
+  }) = ResolverHandlerRegistry;
+
   /// Registers a factory for a [CommandHandler].
   void registerCommand<TCommand extends Command<TResult>, TResult>(
     HandlerFactory<CommandHandler<TCommand, TResult>> factory,

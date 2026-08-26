@@ -72,9 +72,9 @@ class TrackingCommandMiddleware implements CommandMiddleware {
     TCommand command,
     NextHandler<TResult> next,
   ) async {
-    log.add('before:$tag');
+    log.add('$tag:before:${command.runtimeType}');
     final result = await next();
-    log.add('after:$tag');
+    log.add('$tag:after:${command.runtimeType}');
     return result;
   }
 }
@@ -89,9 +89,9 @@ class TrackingQueryMiddleware implements QueryMiddleware {
     TQuery query,
     NextHandler<TResult> next,
   ) async {
-    log.add('query_before:$tag');
+    log.add('$tag:before:${query.runtimeType}');
     final result = await next();
-    log.add('query_after:$tag');
+    log.add('$tag:after:${query.runtimeType}');
     return result;
   }
 }
@@ -104,123 +104,111 @@ class TrackingEventMiddleware implements EventMiddleware {
   @override
   Future<void> handle<TEvent extends DomainEvent>(
     TEvent event,
-    Future<void> Function() next,
+    NextEventHandler next,
   ) async {
-    log.add('event_before:$tag');
+    log.add('$tag:before:${event.runtimeType}');
     await next();
-    log.add('event_after:$tag');
+    log.add('$tag:after:${event.runtimeType}');
   }
 }
 
 void main() {
-  group('DefaultCqrsDispatcher with InMemoryHandlerRegistry', () {
-    late InMemoryHandlerRegistry registry;
+  group('DefaultCqrsDispatcher with DefaultHandlerRegistry', () {
+    late DefaultHandlerRegistry registry;
     late DefaultCqrsDispatcher dispatcher;
 
     setUp(() {
-      registry = InMemoryHandlerRegistry();
+      registry = DefaultHandlerRegistry();
       dispatcher = DefaultCqrsDispatcher(registry: registry);
     });
 
-    test('executes query handler and returns result', () async {
+    test('dispatchQuery executes registered query handler', () async {
       registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
 
-      final result = await dispatcher.dispatchQuery(PingQuery('hello'));
-      expect(result, 'hello');
+      final result = await dispatcher.dispatchQuery(PingQuery('pong'));
+      expect(result, 'pong');
     });
 
-    test('throws HandlerNotFoundException when query handler is not registered',
-        () async {
+    test('dispatchQuery throws HandlerNotFoundException when query handler is missing', () async {
       expect(
         () => dispatcher.dispatchQuery(PingQuery('hello')),
         throwsA(isA<HandlerNotFoundException>()),
       );
     });
 
-    test('executes stream query handler and emits stream events', () async {
-      registry.registerStreamQuery<CountStreamQuery, int>(
-        CountStreamQueryHandler.new,
-      );
-
-      final stream = dispatcher.dispatchStreamQuery(CountStreamQuery(3));
-      expect(await stream.toList(), [1, 2, 3]);
-    });
-
-    test('throws HandlerNotFoundException when stream query handler not registered',
-        () {
-      expect(
-        () => dispatcher.dispatchStreamQuery(CountStreamQuery(3)),
-        throwsA(isA<HandlerNotFoundException>()),
-      );
-    });
-
-    test('executes command handler and publishes events to listeners',
-        () async {
-      final log = <String>[];
-      registry.registerCommand<EchoCommand, int>(
-        () => EchoCommandHandler(dispatcher),
-      );
-      registry.registerEvent<EchoedEvent>(
-        () => RecordingHandler('a', log),
-      );
-      registry.registerEvent<EchoedEvent>(
-        () => RecordingHandler('b', log),
-      );
+    test('dispatchCommand executes registered command handler and emits event', () async {
+      registry.registerCommand<EchoCommand, int>(() => EchoCommandHandler(dispatcher));
+      final received = <String>[];
+      registry.registerEvent<EchoedEvent>(() => RecordingHandler('a', received));
 
       final result = await dispatcher.dispatchCommand(EchoCommand(42));
       expect(result, 42);
-      expect(log, unorderedEquals(['a:42', 'b:42']));
+      expect(received, ['a:42']);
     });
 
-    test('throws HandlerNotFoundException when command handler is not registered',
-        () async {
+    test('dispatchCommand throws HandlerNotFoundException when command handler is missing', () async {
       expect(
         () => dispatcher.dispatchCommand(EchoCommand(1)),
         throwsA(isA<HandlerNotFoundException>()),
       );
     });
 
-    test('publishEvent is a no-op when no event handlers are registered',
-        () async {
-      await expectLater(
-        dispatcher.publishEvent(UnusedEvent()),
-        completes,
+    test('dispatchStreamQuery streams values from registered stream query handler', () async {
+      registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new);
+
+      final stream = dispatcher.dispatchStreamQuery(CountStreamQuery(3));
+      expect(await stream.toList(), [1, 2, 3]);
+    });
+
+    test('dispatchStreamQuery throws HandlerNotFoundException when handler is missing', () {
+      expect(
+        () => dispatcher.dispatchStreamQuery(CountStreamQuery(3)),
+        throwsA(isA<HandlerNotFoundException>()),
       );
+    });
+
+    test('publishEvent broadcasts to multiple registered event handlers', () async {
+      final log = <String>[];
+      registry.registerEvent<EchoedEvent>(() => RecordingHandler('first', log));
+      registry.registerEvent<EchoedEvent>(() => RecordingHandler('second', log));
+
+      await dispatcher.publishEvent(EchoedEvent(7));
+      expect(log, containsAllInOrder(['first:7', 'second:7']));
+    });
+
+    test('publishEvent does nothing when no handler is registered for event', () async {
+      expect(() async => dispatcher.publishEvent(UnusedEvent()), returnsNormally);
     });
 
     test('publishAll publishes all events in sequence', () async {
       final log = <String>[];
-      registry.registerEvent<EchoedEvent>(() => RecordingHandler('seq', log));
+      registry.registerEvent<EchoedEvent>(() => RecordingHandler('rec', log));
 
-      await dispatcher.publishAll([
-        EchoedEvent(1),
-        EchoedEvent(2),
-        EchoedEvent(3),
-      ]);
-
-      expect(log, ['seq:1', 'seq:2', 'seq:3']);
+      await dispatcher.publishAll([EchoedEvent(1), EchoedEvent(2)]);
+      expect(log, ['rec:1', 'rec:2']);
     });
 
-    test('throws DuplicateHandlerException on double command/query registration',
-        () {
+    test('throws DuplicateHandlerException on double command/query registration', () {
+      registry.registerCommand<EchoCommand, int>(() => EchoCommandHandler(dispatcher));
+      expect(
+        () => registry.registerCommand<EchoCommand, int>(() => EchoCommandHandler(dispatcher)),
+        throwsA(isA<DuplicateHandlerException>()),
+      );
+
       registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
       expect(
         () => registry.registerQuery<PingQuery, String>(PingQueryHandler.new),
         throwsA(isA<DuplicateHandlerException>()),
       );
 
-      registry.registerCommand<EchoCommand, int>(
-        () => EchoCommandHandler(dispatcher),
-      );
+      registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new);
       expect(
-        () => registry.registerCommand<EchoCommand, int>(
-          () => EchoCommandHandler(dispatcher),
-        ),
+        () => registry.registerStreamQuery<CountStreamQuery, int>(CountStreamQueryHandler.new),
         throwsA(isA<DuplicateHandlerException>()),
       );
     });
 
-    test('registry.clear() removes all registered handlers', () {
+    test('registry.clear() removes all registered handlers', () async {
       registry.registerQuery<PingQuery, String>(PingQueryHandler.new);
       expect(registry.resolveQuery<PingQuery, String>(), isNotNull);
 
@@ -231,69 +219,69 @@ void main() {
 
   group('Middlewares', () {
     test('command middlewares execute in order (onion layer)', () async {
-      final pipelineLog = <String>[];
-      final registry = InMemoryHandlerRegistry()
-        ..registerCommand<EchoCommand, int>(
-          () => EchoCommandHandler(DefaultCqrsDispatcher()),
-        );
+      final log = <String>[];
+      final registry = DefaultHandlerRegistry()
+        ..registerCommand<EchoCommand, int>(() => EchoCommandHandler(DefaultCqrsDispatcher()));
 
       final dispatcher = DefaultCqrsDispatcher(
         registry: registry,
         commandMiddlewares: [
-          TrackingCommandMiddleware(pipelineLog, 'm1'),
-          TrackingCommandMiddleware(pipelineLog, 'm2'),
+          TrackingCommandMiddleware(log, 'm1'),
+          TrackingCommandMiddleware(log, 'm2'),
         ],
       );
 
       final result = await dispatcher.dispatchCommand(EchoCommand(10));
       expect(result, 10);
-      expect(pipelineLog, [
-        'before:m1',
-        'before:m2',
-        'after:m2',
-        'after:m1',
+      expect(log, [
+        'm1:before:EchoCommand',
+        'm2:before:EchoCommand',
+        'm2:after:EchoCommand',
+        'm1:after:EchoCommand',
       ]);
     });
 
     test('query middlewares execute in order', () async {
-      final pipelineLog = <String>[];
-      final registry = InMemoryHandlerRegistry()
+      final log = <String>[];
+      final registry = DefaultHandlerRegistry()
         ..registerQuery<PingQuery, String>(PingQueryHandler.new);
 
       final dispatcher = DefaultCqrsDispatcher(
         registry: registry,
         queryMiddlewares: [
-          TrackingQueryMiddleware(pipelineLog, 'q1'),
-          TrackingQueryMiddleware(pipelineLog, 'q2'),
+          TrackingQueryMiddleware(log, 'qm1'),
+          TrackingQueryMiddleware(log, 'qm2'),
         ],
       );
 
       final result = await dispatcher.dispatchQuery(PingQuery('test'));
       expect(result, 'test');
-      expect(pipelineLog, [
-        'query_before:q1',
-        'query_before:q2',
-        'query_after:q2',
-        'query_after:q1',
+      expect(log, [
+        'qm1:before:PingQuery',
+        'qm2:before:PingQuery',
+        'qm2:after:PingQuery',
+        'qm1:after:PingQuery',
       ]);
     });
 
     test('event middlewares execute around event handlers', () async {
-      final pipelineLog = <String>[];
-      final eventLog = <String>[];
-      final registry = InMemoryHandlerRegistry()
-        ..registerEvent<EchoedEvent>(() => RecordingHandler('h', eventLog));
+      final log = <String>[];
+      final registry = DefaultHandlerRegistry()
+        ..registerEvent<EchoedEvent>(() => RecordingHandler('handler', log));
 
       final dispatcher = DefaultCqrsDispatcher(
         registry: registry,
         eventMiddlewares: [
-          TrackingEventMiddleware(pipelineLog, 'e1'),
+          TrackingEventMiddleware(log, 'em1'),
         ],
       );
 
       await dispatcher.publishEvent(EchoedEvent(5));
-      expect(eventLog, ['h:5']);
-      expect(pipelineLog, ['event_before:e1', 'event_after:e1']);
+      expect(log, [
+        'em1:before:EchoedEvent',
+        'handler:5',
+        'em1:after:EchoedEvent',
+      ]);
     });
   });
 
@@ -321,15 +309,31 @@ void main() {
         ],
       };
 
-      final resolverRegistry = ResolverHandlerRegistry(
+      final resolverRegistry = HandlerRegistry.resolver(
         resolver: (_) => null,
         multiResolver: (type) => multiMap[type] ?? const [],
       );
 
-      final dispatcher = DefaultCqrsDispatcher(registry: resolverRegistry);
+      final dispatcher = CqrsDispatcher(registry: resolverRegistry);
       await dispatcher.publishEvent(EchoedEvent(99));
 
       expect(log, unorderedEquals(['x:99', 'y:99']));
+    });
+  });
+
+  group('Factory constructors', () {
+    test('HandlerRegistry() and HandlerRegistry.defaultRegistry() return DefaultHandlerRegistry', () {
+      final r1 = HandlerRegistry();
+      expect(r1, isA<DefaultHandlerRegistry>());
+
+      final r2 = HandlerRegistry.defaultRegistry();
+      expect(r2, isA<DefaultHandlerRegistry>());
+    });
+
+    test('CqrsDispatcher() returns DefaultCqrsDispatcher with DefaultHandlerRegistry by default', () async {
+      final dispatcher = CqrsDispatcher();
+      expect(dispatcher, isA<DefaultCqrsDispatcher>());
+      expect((dispatcher as DefaultCqrsDispatcher).registry, isA<DefaultHandlerRegistry>());
     });
   });
 }

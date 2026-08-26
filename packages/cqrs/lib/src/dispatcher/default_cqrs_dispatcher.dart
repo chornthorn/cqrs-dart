@@ -5,8 +5,8 @@ import '../contracts/stream_query.dart';
 import '../exceptions/cqrs_exceptions.dart';
 import '../pipeline/middleware.dart';
 import '../pipeline/pipeline_runner.dart';
+import '../registry/default_handler_registry.dart';
 import '../registry/handler_registry.dart';
-import '../registry/in_memory_handler_registry.dart';
 import 'cqrs_dispatcher.dart';
 
 /// Default pure Dart implementation of [CqrsDispatcher].
@@ -17,7 +17,7 @@ class DefaultCqrsDispatcher implements CqrsDispatcher {
     List<CommandMiddleware>? commandMiddlewares,
     List<QueryMiddleware>? queryMiddlewares,
     List<EventMiddleware>? eventMiddlewares,
-  })  : _registry = registry ?? InMemoryHandlerRegistry(),
+  })  : _registry = registry ?? DefaultHandlerRegistry(),
         _commandMiddlewares = commandMiddlewares ?? const [],
         _queryMiddlewares = queryMiddlewares ?? const [],
         _eventMiddlewares = eventMiddlewares ?? const [];

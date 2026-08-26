@@ -10,11 +10,11 @@ void main() async {
   final auditLogger = TaskAuditLogHandler();
   final loggingMiddleware = LoggingCommandMiddleware();
 
-  // 2. Pure Dart in-memory registry
-  final registry = InMemoryHandlerRegistry();
+  // 2. Pure Dart registry
+  final registry = HandlerRegistry();
 
   // 3. Pure Dart dispatcher
-  final dispatcher = DefaultCqrsDispatcher(
+  final dispatcher = CqrsDispatcher(
     registry: registry,
     commandMiddlewares: [loggingMiddleware],
   );

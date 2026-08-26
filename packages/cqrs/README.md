@@ -6,7 +6,7 @@ Lightweight, **pure Dart** CQRS (Command Query Responsibility Segregation) and e
 
 - 🎯 **Pure Dart**: Zero runtime dependencies. Compatible with Flutter, pure Dart, server-side Dart, and CLI apps.
 - 📦 **Strongly Typed**: Clean generic contracts for `Command<TResult>`, `Query<TResult>`, `StreamQuery<TResult>`, and `DomainEvent`.
-- 🔌 **Pluggable & Container Agnostic**: Use the built-in pure `InMemoryHandlerRegistry`, or connect to any DI framework (`GetIt`, `Riverpod`, etc.) via `ResolverHandlerRegistry`.
+- 🔌 **Pluggable & Container Agnostic**: Use the built-in `DefaultHandlerRegistry`, or connect to any DI framework (`GetIt`, `Riverpod`, etc.) via `HandlerRegistry.resolver`.
 - 🧅 **Pipeline & Middlewares**: Built-in support for interceptors/middleware (logging, tracing, metrics, validation, retries).
 - ⚡ **Stream Queries**: First-class support for real-time reactive queries.
 
@@ -71,12 +71,12 @@ class WelcomeEmailHandler implements EventHandler<UserCreatedEvent> {
 
 ```dart
 void main() async {
-  final registry = InMemoryHandlerRegistry()
+  final registry = HandlerRegistry()
     ..registerCommand<CreateUserCommand, String>(CreateUserCommandHandler.new)
     ..registerQuery<GetUserQuery, User?>(GetUserQueryHandler.new)
     ..registerEvent<UserCreatedEvent>(WelcomeEmailHandler.new);
 
-  final dispatcher = DefaultCqrsDispatcher(registry: registry);
+  final dispatcher = CqrsDispatcher(registry: registry);
 
   // Dispatch command
   final userId = await dispatcher.dispatchCommand(CreateUserCommand('hello@example.com'));
@@ -105,7 +105,7 @@ class LoggingCommandMiddleware implements CommandMiddleware {
   }
 }
 
-final dispatcher = DefaultCqrsDispatcher(
+final dispatcher = CqrsDispatcher(
   registry: registry,
   commandMiddlewares: [LoggingCommandMiddleware()],
 );

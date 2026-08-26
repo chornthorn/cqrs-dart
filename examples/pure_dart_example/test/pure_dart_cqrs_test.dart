@@ -5,7 +5,7 @@ import 'package:test/test.dart';
 void main() {
   group('Pure Dart Manual CQRS Flow', () {
     late TaskRepository repository;
-    late InMemoryHandlerRegistry registry;
+    late HandlerRegistry registry;
     late LoggingCommandMiddleware middleware;
     late DefaultCqrsDispatcher dispatcher;
     late TaskNotificationHandler notificationHandler;
@@ -13,7 +13,7 @@ void main() {
 
     setUp(() {
       repository = TaskRepository();
-      registry = InMemoryHandlerRegistry();
+      registry = HandlerRegistry();
       middleware = LoggingCommandMiddleware();
       dispatcher = DefaultCqrsDispatcher(
         registry: registry,

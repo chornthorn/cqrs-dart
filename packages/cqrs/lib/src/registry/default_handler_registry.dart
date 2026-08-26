@@ -5,8 +5,11 @@ import '../contracts/stream_query.dart';
 import '../exceptions/cqrs_exceptions.dart';
 import 'handler_registry.dart';
 
-/// Pure in-memory implementation of [HandlerRegistry].
-class InMemoryHandlerRegistry implements HandlerRegistry {
+/// Default in-process implementation of [HandlerRegistry].
+class DefaultHandlerRegistry implements HandlerRegistry {
+  /// Creates a new, empty [DefaultHandlerRegistry].
+  DefaultHandlerRegistry();
+
   final Map<Type, HandlerFactory<dynamic>> _commandHandlers = {};
   final Map<Type, HandlerFactory<dynamic>> _queryHandlers = {};
   final Map<Type, HandlerFactory<dynamic>> _streamQueryHandlers = {};

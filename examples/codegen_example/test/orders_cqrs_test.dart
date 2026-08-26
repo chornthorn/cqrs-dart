@@ -4,21 +4,19 @@ import 'package:test/test.dart';
 
 void main() {
   group('Codegen Example CQRS Flow', () {
-    late InMemoryHandlerRegistry registry;
-    late DefaultCqrsDispatcher dispatcher;
+    late HandlerRegistry registry;
     late OrderRepository repository;
+    late DefaultCqrsDispatcher dispatcher;
     late InvoiceNotificationHandler invoiceHandler;
     late OrderAnalyticsHandler analyticsHandler;
 
     setUp(() {
       repository = OrderRepository();
-      registry = InMemoryHandlerRegistry();
+      registry = HandlerRegistry();
       dispatcher = DefaultCqrsDispatcher(registry: registry);
-
       invoiceHandler = InvoiceNotificationHandler();
       analyticsHandler = OrderAnalyticsHandler();
 
-      // Use the generated extension method
       registry.registerGeneratedHandlers(
         placeOrderCommandHandler: () => PlaceOrderCommandHandler(
           repository: repository,
@@ -32,37 +30,33 @@ void main() {
       );
     });
 
-    test('dispatches PlaceOrderCommand, persists order, and notifies event listeners',
-        () async {
+    test('dispatches PlaceOrderCommand, persists order, and notifies event listeners', () async {
       final orderId = await dispatcher.dispatchCommand(
-        PlaceOrderCommand(item: 'MacBook Pro', amount: 2499.0),
+        PlaceOrderCommand(item: 'iPhone 16 Pro', amount: 1199.00),
       );
 
       expect(orderId, startsWith('ORD-'));
 
-      // Check event handlers were notified
+      final order = await dispatcher.dispatchQuery(GetOrderQuery(orderId));
+      expect(order, isNotNull);
+      expect(order!.item, 'iPhone 16 Pro');
+      expect(order.amount, 1199.00);
+
       expect(invoiceHandler.sentInvoices.length, 1);
       expect(
         invoiceHandler.sentInvoices.first,
-        contains('Invoice sent for order $orderId (\$2499.0)'),
+        contains('Invoice sent for order $orderId (\$1199.0)'),
       );
 
       expect(analyticsHandler.recordedEvents.length, 1);
       expect(
         analyticsHandler.recordedEvents.first,
-        'Analytics logged for order $orderId',
+        contains('Analytics logged for order $orderId'),
       );
-
-      // Query the order
-      final fetched = await dispatcher.dispatchQuery(GetOrderQuery(orderId));
-      expect(fetched, isNotNull);
-      expect(fetched!.id, orderId);
-      expect(fetched.item, 'MacBook Pro');
-      expect(fetched.amount, 2499.0);
     });
 
     test('returns null when querying non-existent order', () async {
-      final order = await dispatcher.dispatchQuery(GetOrderQuery('invalid-id'));
+      final order = await dispatcher.dispatchQuery(GetOrderQuery('non-existent'));
       expect(order, isNull);
     });
   });

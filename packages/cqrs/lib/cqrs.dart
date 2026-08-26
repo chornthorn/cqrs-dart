@@ -18,6 +18,6 @@ export 'src/exceptions/cqrs_exceptions.dart';
 export 'src/pipeline/middleware.dart';
 export 'src/pipeline/pipeline_runner.dart';
 // Registry
+export 'src/registry/default_handler_registry.dart';
 export 'src/registry/handler_registry.dart';
-export 'src/registry/in_memory_handler_registry.dart';
 export 'src/registry/resolver_handler_registry.dart';

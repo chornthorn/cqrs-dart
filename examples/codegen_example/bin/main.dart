@@ -3,8 +3,8 @@ import 'package:cqrs/cqrs.dart';
 
 void main() async {
   final repository = OrderRepository();
-  final registry = InMemoryHandlerRegistry();
-  final dispatcher = DefaultCqrsDispatcher(registry: registry);
+  final registry = HandlerRegistry();
+  final dispatcher = CqrsDispatcher(registry: registry);
 
   final invoiceHandler = InvoiceNotificationHandler();
   final analyticsHandler = OrderAnalyticsHandler();
