@@ -8,7 +8,7 @@ class GetUnreadNotificationCountQuery extends Query<int> {
   final String recipientId;
 }
 
-@Injectable(as: QueryHandler<GetUnreadNotificationCountQuery, int>)
+@injectable
 class GetUnreadNotificationCountHandler
     implements QueryHandler<GetUnreadNotificationCountQuery, int> {
   GetUnreadNotificationCountHandler(this._repository);

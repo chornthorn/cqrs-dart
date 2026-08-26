@@ -3,7 +3,7 @@ import 'package:hello_world/features/notification/domain/events/notification_rea
 import 'package:hello_world/features/notification/infrastructure/notification_log.dart';
 import 'package:injectable/injectable.dart';
 
-@Injectable(as: EventHandler<NotificationReadEvent>)
+@injectable
 class NotificationReadAnalyticsHandler
     implements EventHandler<NotificationReadEvent> {
   NotificationReadAnalyticsHandler(this._log);

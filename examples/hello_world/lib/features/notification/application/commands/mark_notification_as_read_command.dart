@@ -9,7 +9,7 @@ class MarkNotificationAsReadCommand extends Command<bool> {
   final String notificationId;
 }
 
-@Injectable(as: CommandHandler<MarkNotificationAsReadCommand, bool>)
+@injectable
 class MarkNotificationAsReadHandler
     implements CommandHandler<MarkNotificationAsReadCommand, bool> {
   MarkNotificationAsReadHandler(this._dispatcher, this._notifications);

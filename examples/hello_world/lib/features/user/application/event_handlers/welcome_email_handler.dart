@@ -3,7 +3,7 @@ import 'package:hello_world/features/user/domain/events/user_created_event.dart'
 import 'package:hello_world/features/user/infrastructure/side_effect_log.dart';
 import 'package:injectable/injectable.dart';
 
-@Injectable(as: EventHandler<UserCreatedEvent>)
+@injectable
 class WelcomeEmailHandler implements EventHandler<UserCreatedEvent> {
   WelcomeEmailHandler(this._log);
 

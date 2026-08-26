@@ -4,8 +4,9 @@ A code generator for the [`cqrs`](../cqrs) package that automatically discovers 
 
 ## Features
 
-- 🔍 **Auto-Discovery**: Discovers classes implementing `CommandHandler`, `QueryHandler`, or `EventHandler`.
-- 🛠 **Zero-Boilerplate**: Generates type-safe `HandlerRegistry` extension methods.
+- 🔍 **Auto-Discovery**: Recursively scans directory subtrees for classes implementing `CommandHandler`, `QueryHandler`, or `EventHandler`.
+- 📦 **Micro-Packages & Modules**: Supports `@CqrsMicroPackage` for modular features and sub-packages with boundary detection.
+- 🛠 **Zero-Boilerplate**: Generates standalone `.cqrs.dart` files with Injectable-style auto-resolved imports.
 - 💉 **DI Friendly**: Easily bind dependencies for handlers with parameters, while automatically generating default factories for 0-argument handlers.
 
 ## Getting Started
@@ -23,35 +24,60 @@ dev_dependencies:
 
 ## Usage
 
-### 1. Annotate your initialization file
+### 1. Feature Micro-Package
 
-Create `lib/cqrs_init.dart`:
+In `lib/features/orders/orders_cqrs_module.dart`:
 
 ```dart
 import 'package:cqrs_codegen/cqrs_codegen.dart';
-import 'features/orders/orders.dart';
 
-part 'cqrs_init.g.dart';
+export 'orders_cqrs_module.cqrs.dart';
 
-@cqrsInit
+@CqrsMicroPackage(moduleName: 'Orders')
+void configureOrdersHandlers() {}
+```
+
+### 2. Root Application Initializer
+
+In `lib/cqrs_init.dart`:
+
+```dart
+import 'package:cqrs_codegen/cqrs_codegen.dart';
+
+import 'features/orders/orders_cqrs_module.dart';
+
+export 'cqrs_init.cqrs.dart';
+export 'features/orders/orders_cqrs_module.dart';
+
+@CqrsInit(
+  moduleName: 'App',
+  useMicroPackage: true,
+  modules: [OrdersCqrsModule],
+)
 void configureCqrs() {}
 ```
 
-### 2. Run code generation
+### 3. Run code generation
 
 ```bash
 dart run build_runner build
 ```
 
-### 3. Register handlers effortlessly
+### 4. Register handlers effortlessly
 
 ```dart
+import 'package:cqrs/cqrs.dart';
+import 'package:my_app/cqrs_init.dart';
+
 final dispatcher = CqrsDispatcher();
 
-dispatcher.registry.registerGeneratedHandlers(
-  placeOrderCommandHandler: () => PlaceOrderCommandHandler(repository: repository, publisher: dispatcher),
-  getOrderQueryHandler: () => GetOrderQueryHandler(repository: repository),
-  // Handlers with zero-arg constructors are provided by default!
+dispatcher.registry.registerModule(
+  AppCqrsModule(
+    ordersCqrsModule: OrdersCqrsModule(
+      placeOrderCommandHandler: () => PlaceOrderCommandHandler(repository: repository, publisher: dispatcher),
+      getOrderQueryHandler: () => GetOrderQueryHandler(repository: repository),
+    ),
+  ),
 );
 
 final orderId = await dispatcher.command(PlaceOrderCommand(...));

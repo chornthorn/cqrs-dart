@@ -3,7 +3,7 @@ import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/user/domain/events/user_created_event.dart';
 import 'package:hello_world/features/user/infrastructure/side_effect_log.dart';
 
-@Injectable(as: EventHandler<UserCreatedEvent>)
+@injectable
 class AnalyticsHandler implements EventHandler<UserCreatedEvent> {
   AnalyticsHandler(this._log);
 

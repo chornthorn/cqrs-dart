@@ -15,7 +15,7 @@ class SendNotificationCommand extends Command<String> {
   final String message;
 }
 
-@Injectable(as: CommandHandler<SendNotificationCommand, String>)
+@injectable
 class SendNotificationHandler
     implements CommandHandler<SendNotificationCommand, String> {
   SendNotificationHandler(this._dispatcher, this._notifications);

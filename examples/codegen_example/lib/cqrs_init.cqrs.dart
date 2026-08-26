@@ -8,13 +8,11 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes, prefer_initializing_formals
 
 import 'package:cqrs/cqrs.dart' as _i1;
-import 'package:codegen_example/features/billing/billing_cqrs_module.dart'
-    as _i2;
-import 'package:codegen_example/features/billing/gateway/gateway_cqrs_module.dart'
+import 'package:codegen_example/features/billing/billing_handler.dart' as _i2;
+import 'package:codegen_example/features/billing/gateway/gateway_handler.dart'
     as _i3;
-import 'package:codegen_example/features/invoice/invoice_cqrs_module.dart'
-    as _i4;
-import 'package:codegen_example/features/orders/orders_cqrs_module.dart' as _i5;
+import 'package:codegen_example/features/invoice/invoice_handler.dart' as _i4;
+import 'package:codegen_example/features/orders/orders_handler.dart' as _i5;
 
 /// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
 ///

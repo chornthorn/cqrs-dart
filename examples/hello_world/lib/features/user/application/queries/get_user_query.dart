@@ -9,7 +9,7 @@ class GetUserQuery extends Query<User?> {
   final String userId;
 }
 
-@Injectable(as: QueryHandler<GetUserQuery, User?>)
+@injectable
 class GetUserHandler implements QueryHandler<GetUserQuery, User?> {
   GetUserHandler(this._users);
 

@@ -23,12 +23,6 @@ import 'package:hello_world/features/notification/application/queries/get_notifi
     as _i883;
 import 'package:hello_world/features/notification/application/queries/get_unread_notification_count_query.dart'
     as _i455;
-import 'package:hello_world/features/notification/domain/entities/app_notification.dart'
-    as _i820;
-import 'package:hello_world/features/notification/domain/events/notification_read_event.dart'
-    as _i299;
-import 'package:hello_world/features/notification/domain/events/notification_sent_event.dart'
-    as _i473;
 import 'package:hello_world/features/notification/infrastructure/notification_log.dart'
     as _i382;
 import 'package:hello_world/features/notification/infrastructure/notification_repository.dart'
@@ -41,9 +35,6 @@ import 'package:hello_world/features/user/application/event_handlers/welcome_ema
     as _i951;
 import 'package:hello_world/features/user/application/queries/get_user_query.dart'
     as _i148;
-import 'package:hello_world/features/user/domain/entities/user.dart' as _i768;
-import 'package:hello_world/features/user/domain/events/user_created_event.dart'
-    as _i220;
 import 'package:hello_world/features/user/infrastructure/side_effect_log.dart'
     as _i1055;
 import 'package:hello_world/features/user/infrastructure/user_repository.dart'
@@ -67,48 +58,45 @@ extension GetItInjectableX on _i174.GetIt {
     );
     gh.lazySingleton<_i1055.SideEffectLog>(() => _i1055.SideEffectLog());
     gh.lazySingleton<_i1067.UserRepository>(() => _i1067.UserRepository());
-    gh.factory<_i348.EventHandler<_i220.UserCreatedEvent>>(
-      () => _i833.AnalyticsHandler(gh<_i1055.SideEffectLog>()),
+    gh.factory<_i51.NotificationReadAnalyticsHandler>(
+      () => _i51.NotificationReadAnalyticsHandler(gh<_i382.NotificationLog>()),
     );
-    gh.factory<
-      _i348.QueryHandler<
-        _i883.GetNotificationsQuery,
-        List<_i820.AppNotification>
-      >
-    >(() => _i883.GetNotificationsHandler(gh<_i357.NotificationRepository>()));
-    gh.factory<_i348.CommandHandler<_i50.SendNotificationCommand, String>>(
-      () => _i50.SendNotificationHandler(
-        gh<_i348.CqrsDispatcher>(),
-        gh<_i357.NotificationRepository>(),
-      ),
+    gh.factory<_i762.PushNotificationDeliveryHandler>(
+      () => _i762.PushNotificationDeliveryHandler(gh<_i382.NotificationLog>()),
     );
-    gh.factory<_i348.QueryHandler<_i455.GetUnreadNotificationCountQuery, int>>(
+    gh.factory<_i148.GetUserHandler>(
+      () => _i148.GetUserHandler(gh<_i1067.UserRepository>()),
+    );
+    gh.factory<_i883.GetNotificationsHandler>(
+      () => _i883.GetNotificationsHandler(gh<_i357.NotificationRepository>()),
+    );
+    gh.factory<_i455.GetUnreadNotificationCountHandler>(
       () => _i455.GetUnreadNotificationCountHandler(
         gh<_i357.NotificationRepository>(),
       ),
     );
-    gh.factory<_i348.QueryHandler<_i148.GetUserQuery, _i768.User?>>(
-      () => _i148.GetUserHandler(gh<_i1067.UserRepository>()),
+    gh.factory<_i833.AnalyticsHandler>(
+      () => _i833.AnalyticsHandler(gh<_i1055.SideEffectLog>()),
     );
-    gh.factory<_i348.EventHandler<_i220.UserCreatedEvent>>(
+    gh.factory<_i951.WelcomeEmailHandler>(
       () => _i951.WelcomeEmailHandler(gh<_i1055.SideEffectLog>()),
     );
-    gh.factory<_i348.EventHandler<_i473.NotificationSentEvent>>(
-      () => _i762.PushNotificationDeliveryHandler(gh<_i382.NotificationLog>()),
+    gh.factory<_i365.CreateUserHandler>(
+      () => _i365.CreateUserHandler(
+        gh<_i348.CqrsDispatcher>(),
+        gh<_i1067.UserRepository>(),
+      ),
     );
-    gh.factory<_i348.EventHandler<_i299.NotificationReadEvent>>(
-      () => _i51.NotificationReadAnalyticsHandler(gh<_i382.NotificationLog>()),
-    );
-    gh.factory<_i348.CommandHandler<_i176.MarkNotificationAsReadCommand, bool>>(
+    gh.factory<_i176.MarkNotificationAsReadHandler>(
       () => _i176.MarkNotificationAsReadHandler(
         gh<_i348.CqrsDispatcher>(),
         gh<_i357.NotificationRepository>(),
       ),
     );
-    gh.factory<_i348.CommandHandler<_i365.CreateUserCommand, bool>>(
-      () => _i365.CreateUserHandler(
+    gh.factory<_i50.SendNotificationHandler>(
+      () => _i50.SendNotificationHandler(
         gh<_i348.CqrsDispatcher>(),
-        gh<_i1067.UserRepository>(),
+        gh<_i357.NotificationRepository>(),
       ),
     );
     return this;
