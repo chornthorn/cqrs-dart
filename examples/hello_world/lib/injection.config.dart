@@ -48,17 +48,19 @@ import 'package:hello_world/features/user/infrastructure/side_effect_log.dart'
     as _i1055;
 import 'package:hello_world/features/user/infrastructure/user_repository.dart'
     as _i1067;
+import 'package:hello_world/injection.dart' as _i609;
 import 'package:injectable/injectable.dart' as _i526;
 
 extension GetItInjectableX on _i174.GetIt {
   // initializes the registration of main-scope dependencies inside of GetIt
-  Future<_i174.GetIt> bootstrap({
+  _i174.GetIt bootstrap({
     String? environment,
     _i526.EnvironmentFilter? environmentFilter,
-  }) async {
+  }) {
     this.enableRegisteringMultipleInstancesOfOneType();
     final gh = _i526.GetItHelper(this, environment, environmentFilter);
-    await _i348.CqrsPackageModule().init(gh);
+    final cqrsModule = _$CqrsModule();
+    gh.singleton<_i348.CqrsDispatcher>(() => cqrsModule.cqrsDispatcher);
     gh.lazySingleton<_i382.NotificationLog>(() => _i382.NotificationLog());
     gh.lazySingleton<_i357.NotificationRepository>(
       () => _i357.NotificationRepository(),
@@ -74,6 +76,12 @@ extension GetItInjectableX on _i174.GetIt {
         List<_i820.AppNotification>
       >
     >(() => _i883.GetNotificationsHandler(gh<_i357.NotificationRepository>()));
+    gh.factory<_i348.CommandHandler<_i50.SendNotificationCommand, String>>(
+      () => _i50.SendNotificationHandler(
+        gh<_i348.CqrsDispatcher>(),
+        gh<_i357.NotificationRepository>(),
+      ),
+    );
     gh.factory<_i348.QueryHandler<_i455.GetUnreadNotificationCountQuery, int>>(
       () => _i455.GetUnreadNotificationCountHandler(
         gh<_i357.NotificationRepository>(),
@@ -88,12 +96,6 @@ extension GetItInjectableX on _i174.GetIt {
     gh.factory<_i348.EventHandler<_i473.NotificationSentEvent>>(
       () => _i762.PushNotificationDeliveryHandler(gh<_i382.NotificationLog>()),
     );
-    gh.factory<_i348.CommandHandler<_i365.CreateUserCommand, bool>>(
-      () => _i365.CreateUserHandler(
-        gh<_i348.CqrsDispatcher>(),
-        gh<_i1067.UserRepository>(),
-      ),
-    );
     gh.factory<_i348.EventHandler<_i299.NotificationReadEvent>>(
       () => _i51.NotificationReadAnalyticsHandler(gh<_i382.NotificationLog>()),
     );
@@ -103,12 +105,14 @@ extension GetItInjectableX on _i174.GetIt {
         gh<_i357.NotificationRepository>(),
       ),
     );
-    gh.factory<_i348.CommandHandler<_i50.SendNotificationCommand, String>>(
-      () => _i50.SendNotificationHandler(
+    gh.factory<_i348.CommandHandler<_i365.CreateUserCommand, bool>>(
+      () => _i365.CreateUserHandler(
         gh<_i348.CqrsDispatcher>(),
-        gh<_i357.NotificationRepository>(),
+        gh<_i1067.UserRepository>(),
       ),
     );
     return this;
   }
 }
+
+class _$CqrsModule extends _i609.CqrsModule {}

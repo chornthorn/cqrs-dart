@@ -1,37 +1,116 @@
 # cqrs
 
-CQRS and event-driven architecture for Dart. This package is shared infrastructure only: contracts, a dispatcher, and GetIt registration. Application features (commands, queries, events, handlers) live in the host app, not in this library.
+Lightweight, **pure Dart** CQRS (Command Query Responsibility Segregation) and event-driven architecture library with **zero third-party dependencies**.
 
-## Purpose
+## Features
 
-Give application code one entry point (`CqrsDispatcher`) for writes, reads, and in-process events. UI and BLoC layers dispatch data objects; they never look up handlers.
+- 🎯 **Pure Dart**: Zero runtime dependencies. Compatible with Flutter, pure Dart, server-side Dart, and CLI apps.
+- 📦 **Strongly Typed**: Clean generic contracts for `Command<TResult>`, `Query<TResult>`, `StreamQuery<TResult>`, and `DomainEvent`.
+- 🔌 **Pluggable & Container Agnostic**: Use the built-in pure `InMemoryHandlerRegistry`, or connect to any DI framework (`GetIt`, `Riverpod`, etc.) via `ResolverHandlerRegistry`.
+- 🧅 **Pipeline & Middlewares**: Built-in support for interceptors/middleware (logging, tracing, metrics, validation, retries).
+- ⚡ **Stream Queries**: First-class support for real-time reactive queries.
 
-## Prerequisites
+## Getting Started
 
-- Dart SDK `^3.12.0`
+Add `cqrs` to your `pubspec.yaml`:
 
-## Local Setup
-
-```bash
-dart pub get
-dart run build_runner build
+```yaml
+dependencies:
+  cqrs: ^1.0.0
 ```
 
-Host apps that use injectable include this package as an external module, then register their own feature handlers:
+## Quick Start
+
+### 1. Define Commands, Queries, and Events
 
 ```dart
-@InjectableInit(
-  allowMultipleRegistrations: true,
-  externalPackageModulesBefore: [
-    ExternalModule(CqrsPackageModule),
-  ],
-)
-Future<void> configureDependencies() => getIt.init();
+import 'package:cqrs/cqrs.dart';
+
+// Command
+class CreateUserCommand extends Command<String> {
+  CreateUserCommand(this.email);
+  final String email;
+}
+
+class CreateUserCommandHandler implements CommandHandler<CreateUserCommand, String> {
+  @override
+  Future<String> execute(CreateUserCommand command) async {
+    // perform mutation
+    return 'USER-123';
+  }
+}
+
+// Query
+class GetUserQuery extends Query<User?> {
+  GetUserQuery(this.id);
+  final String id;
+}
+
+class GetUserQueryHandler implements QueryHandler<GetUserQuery, User?> {
+  @override
+  Future<User?> execute(GetUserQuery query) async {
+    return User(id: query.id, email: 'user@example.com');
+  }
+}
+
+// Domain Event
+class UserCreatedEvent extends DomainEvent {
+  UserCreatedEvent(this.userId);
+  final String userId;
+}
+
+class WelcomeEmailHandler implements EventHandler<UserCreatedEvent> {
+  @override
+  Future<void> handle(UserCreatedEvent event) async {
+    print('Sending welcome email to ${event.userId}');
+  }
+}
 ```
 
-## Usage
+### 2. Configure Dispatcher & Handlers
 
 ```dart
-await dispatcher.dispatchCommand(CreateUserCommand('test@example.com'));
-final user = await dispatcher.dispatchQuery(GetUserQuery('USER-123'));
+void main() async {
+  final registry = InMemoryHandlerRegistry()
+    ..registerCommand<CreateUserCommand, String>(CreateUserCommandHandler.new)
+    ..registerQuery<GetUserQuery, User?>(GetUserQueryHandler.new)
+    ..registerEvent<UserCreatedEvent>(WelcomeEmailHandler.new);
+
+  final dispatcher = DefaultCqrsDispatcher(registry: registry);
+
+  // Dispatch command
+  final userId = await dispatcher.dispatchCommand(CreateUserCommand('hello@example.com'));
+
+  // Dispatch query
+  final user = await dispatcher.dispatchQuery(GetUserQuery(userId));
+
+  // Publish event
+  await dispatcher.publishEvent(UserCreatedEvent(userId));
+}
 ```
+
+### 3. Add Middleware / Pipelines
+
+```dart
+class LoggingCommandMiddleware implements CommandMiddleware {
+  @override
+  Future<TResult> handle<TCommand extends Command<TResult>, TResult>(
+    TCommand command,
+    NextHandler<TResult> next,
+  ) async {
+    print('[CQRS] Executing ${command.runtimeType}...');
+    final result = await next();
+    print('[CQRS] Completed ${command.runtimeType}');
+    return result;
+  }
+}
+
+final dispatcher = DefaultCqrsDispatcher(
+  registry: registry,
+  commandMiddlewares: [LoggingCommandMiddleware()],
+);
+```
+
+## Codegen Support
+
+For automatic discovery and registration of handlers using `build_runner`, check out [`cqrs_codegen`](../cqrs_codegen).

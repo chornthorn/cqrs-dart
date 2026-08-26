@@ -4,7 +4,7 @@ import 'package:hello_world/features/notification/domain/events/notification_rea
 import 'package:hello_world/features/notification/infrastructure/notification_repository.dart';
 import 'package:test/test.dart';
 
-class MockDispatcher extends CqrsDispatcher {
+class MockDispatcher extends DefaultCqrsDispatcher {
   final List<DomainEvent> publishedEvents = [];
 
   @override

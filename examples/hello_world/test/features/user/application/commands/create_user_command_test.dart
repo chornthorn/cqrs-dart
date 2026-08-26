@@ -7,7 +7,7 @@ import 'package:test/test.dart';
 
 final getIt = GetIt.instance;
 
-class MockDispatcher extends CqrsDispatcher {
+class MockDispatcher extends DefaultCqrsDispatcher {
   final List<DomainEvent> publishedEvents = [];
 
   @override

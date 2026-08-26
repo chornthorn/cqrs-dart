@@ -6,9 +6,23 @@ import 'injection.config.dart';
 
 final getIt = GetIt.instance;
 
+@module
+abstract class CqrsModule {
+  @singleton
+  CqrsDispatcher get cqrsDispatcher => DefaultCqrsDispatcher(
+        registry: ResolverHandlerRegistry(
+          resolver: (type) =>
+              getIt.isRegistered(type: type) ? getIt.get(type: type) : null,
+          eventResolver: <E extends DomainEvent>() =>
+              getIt.isRegistered<EventHandler<E>>()
+                  ? getIt.getAll<EventHandler<E>>().toList()
+                  : const [],
+        ),
+      );
+}
+
 @InjectableInit(
   initializerName: 'bootstrap',
   allowMultipleRegistrations: true,
-  externalPackageModulesBefore: [ExternalModule(CqrsPackageModule)],
 )
-Future<void> configureDependencies() => getIt.bootstrap();
+Future<void> configureDependencies() async => getIt.bootstrap();
