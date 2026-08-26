@@ -10,6 +10,7 @@ workspace:
   - packages/cqrs_codegen
   - examples/hello_world
   - examples/codegen_example
+  - examples/pure_dart_example
 
 melos:
   scripts:
