@@ -7,18 +7,13 @@ import 'package:source_gen/source_gen.dart';
 
 import '../annotations/cqrs_annotations.dart';
 import '../model/handler_info.dart';
-import '../parser/handler_parser.dart';
 import 'library_scanner.dart';
 
-/// Generator that creates standalone `.cqrs.dart` files with Injectable-style
-/// aliased absolute package imports (`as _i1`, `as _i2`, etc.) to prevent conflicts.
+/// Source generator that scans for CQRS handlers and produces type-safe
+/// `HandlerRegistry` extension methods and/or `CqrsPackageModule` subclasses.
 class CqrsGenerator extends Generator {
-  const CqrsGenerator({
-    this.parser = const HandlerParser(),
-    this.scanner = const LibraryScanner(),
-  });
+  const CqrsGenerator({this.scanner = const LibraryScanner()});
 
-  final HandlerParser parser;
   final LibraryScanner scanner;
 
   static const _anyChecker = TypeChecker.any([
@@ -56,6 +51,8 @@ class CqrsGenerator extends Generator {
         annotation.peek('includeDefaultFactories')?.boolValue ?? true;
     bool useMicroPackage =
         annotation.peek('useMicroPackage')?.boolValue ?? isMicroPackage;
+    bool generateInjectable =
+        annotation.peek('generateInjectable')?.boolValue ?? false;
 
     // Read the list of CqrsPackageModule subclass types provided by the user.
     final moduleTypeNames = <String>[];
@@ -100,6 +97,11 @@ class CqrsGenerator extends Generator {
                               }
                             }
                           }
+                        } else if (arg.name.lexeme == 'generateInjectable') {
+                          final expr = arg.argumentExpression;
+                          if (expr is BooleanLiteral) {
+                            generateInjectable = expr.value;
+                          }
                         }
                       }
                     }
@@ -110,6 +112,11 @@ class CqrsGenerator extends Generator {
           }
         }
       } catch (_) {}
+    }
+
+    // If this is an individual micro-package, inherit generateInjectable if enabled in root init
+    if (isMicroPackage && !generateInjectable) {
+      generateInjectable = await scanner.isInjectableGloballyEnabled(buildStep);
     }
 
     // Resolve naming for micro-packages or standard modules
@@ -197,10 +204,9 @@ class CqrsGenerator extends Generator {
     for (final entry in importAliases.entries) {
       buffer.writeln("import '${entry.key}' as ${entry.value};");
     }
-
     buffer.writeln();
 
-    // 2. Emit HandlerRegistry extension if direct handlers exist
+    // 2. Emit HandlerRegistry extension method (if handlers exist)
     if (handlers.isNotEmpty) {
       buffer.writeln(
         '/// Generated registration helper for discovered CQRS handlers ($extensionName).',
@@ -213,7 +219,9 @@ class CqrsGenerator extends Generator {
             scanner.formatTypeWithAlias(handler.classElement?.thisType, importAliases);
         final paramType = '$handlerTypeStr Function()';
         if (handler.hasDefaultConstructor && includeDefaults) {
-          buffer.writeln('    $paramType ${handler.paramName} = $handlerTypeStr.new,');
+          buffer.writeln(
+            '    $paramType ${handler.paramName} = $handlerTypeStr.new,',
+          );
         } else {
           buffer.writeln('    required $paramType ${handler.paramName},');
         }
@@ -245,6 +253,30 @@ class CqrsGenerator extends Generator {
       }
 
       buffer.writeln('  }');
+
+      // If generateInjectable is enabled, also emit extension helper for service locators
+      if (generateInjectable) {
+        buffer.writeln();
+        buffer.writeln(
+          '  /// Registers all handlers by resolving them from a service locator.',
+        );
+        buffer.writeln(
+          '  void ${methodName}FromLocator(T Function<T extends Object>() locator) {',
+        );
+        buffer.writeln('    $methodName(');
+        for (final handler in handlers) {
+          final handlerTypeStr = scanner.formatTypeWithAlias(
+            handler.classElement?.thisType,
+            importAliases,
+          );
+          buffer.writeln(
+            '      ${handler.paramName}: () => locator<$handlerTypeStr>(),',
+          );
+        }
+        buffer.writeln('    );');
+        buffer.writeln('  }');
+      }
+
       buffer.writeln('}');
     } else if (!shouldEmitModuleClass) {
       buffer.writeln('// No CQRS handlers found in scope.');
@@ -257,7 +289,12 @@ class CqrsGenerator extends Generator {
     if (useMicroPackage) {
       buffer.writeln();
       if (handlers.isEmpty && effectiveModuleClasses.isEmpty) {
-        _writeEmptyModuleClass(buffer, moduleClassName, methodName);
+        _writeEmptyModuleClass(
+          buffer,
+          moduleClassName,
+          methodName,
+          generateInjectable: generateInjectable,
+        );
       } else {
         _writeUnifiedModuleClass(
           buffer,
@@ -269,6 +306,7 @@ class CqrsGenerator extends Generator {
               .toList(),
           includeDefaults: includeDefaults,
           importAliases: importAliases,
+          generateInjectable: generateInjectable,
         );
       }
     }
@@ -280,11 +318,21 @@ class CqrsGenerator extends Generator {
   void _writeEmptyModuleClass(
     StringBuffer buffer,
     String moduleClassName,
-    String methodName,
-  ) {
+    String methodName, {
+    required bool generateInjectable,
+  }) {
     buffer.writeln('/// Generated [CqrsPackageModule] with no registered handlers.');
     buffer.writeln('class $moduleClassName extends _i1.CqrsPackageModule {');
     buffer.writeln('  const $moduleClassName() : super();');
+    if (generateInjectable) {
+      buffer.writeln();
+      buffer.writeln(
+        '  /// Factory constructor that resolves all dependencies from a service locator.',
+      );
+      buffer.writeln(
+        '  factory $moduleClassName.fromLocator(T Function<T extends Object>() locator) => const $moduleClassName();',
+      );
+    }
     buffer.writeln();
     buffer.writeln('  @override');
     buffer.writeln('  void register(_i1.HandlerRegistry registry) {}');
@@ -301,6 +349,7 @@ class CqrsGenerator extends Generator {
     required List<DiscoveredModule> subModules,
     required bool includeDefaults,
     required Map<Uri, String> importAliases,
+    required bool generateInjectable,
   }) {
     String paramName(String typeName) =>
         typeName[0].toLowerCase() + typeName.substring(1);
@@ -354,6 +403,36 @@ class CqrsGenerator extends Generator {
     ];
     buffer.writeln('        ${inits.join(',\n        ')},');
     buffer.writeln('        super();');
+
+    // fromLocator constructor when generateInjectable is true
+    if (generateInjectable) {
+      buffer.writeln();
+      buffer.writeln(
+        '  /// Factory constructor that resolves all handlers from a dependency locator (e.g. GetIt.instance.get).',
+      );
+      buffer.writeln(
+        '  factory $moduleClassName.fromLocator(T Function<T extends Object>() locator) {',
+      );
+      buffer.writeln('    return $moduleClassName(');
+      for (final s in subModules) {
+        final alias = importAliases[s.packageUri] ?? '_i1';
+        buffer.writeln(
+          '      ${paramName(s.moduleClassName)}: $alias.${s.moduleClassName}.fromLocator(locator),',
+        );
+      }
+      for (final handler in handlers) {
+        final handlerTypeStr = scanner.formatTypeWithAlias(
+          handler.classElement?.thisType,
+          importAliases,
+        );
+        buffer.writeln(
+          '      ${handler.paramName}: () => locator<$handlerTypeStr>(),',
+        );
+      }
+      buffer.writeln('    );');
+      buffer.writeln('  }');
+    }
+
     buffer.writeln();
 
     // Private fields

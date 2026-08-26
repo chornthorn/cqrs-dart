@@ -11,6 +11,7 @@ export 'features/user/user_handler.dart';
 @CqrsInit(
   moduleName: 'App',
   useMicroPackage: true,
+  generateInjectable: true,
   modules: [
     UserCqrsModule,
     NotificationCqrsModule,

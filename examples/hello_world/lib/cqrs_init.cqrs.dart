@@ -29,6 +29,14 @@ class AppCqrsModule extends _i1.CqrsPackageModule {
        _userCqrsModule = userCqrsModule,
        super();
 
+  /// Factory constructor that resolves all handlers from a dependency locator (e.g. GetIt.instance.get).
+  factory AppCqrsModule.fromLocator(T Function<T extends Object>() locator) {
+    return AppCqrsModule(
+      notificationCqrsModule: _i2.NotificationCqrsModule.fromLocator(locator),
+      userCqrsModule: _i3.UserCqrsModule.fromLocator(locator),
+    );
+  }
+
   final _i2.NotificationCqrsModule _notificationCqrsModule;
   final _i3.UserCqrsModule _userCqrsModule;
 

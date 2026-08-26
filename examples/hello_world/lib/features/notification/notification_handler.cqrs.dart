@@ -56,6 +56,24 @@ extension AutoRegisterNotificationCqrs on _i1.HandlerRegistry {
       getUnreadNotificationCountHandler,
     );
   }
+
+  /// Registers all handlers by resolving them from a service locator.
+  void registerNotificationHandlersFromLocator(
+    T Function<T extends Object>() locator,
+  ) {
+    registerNotificationHandlers(
+      markNotificationAsReadHandler: () =>
+          locator<_i2.MarkNotificationAsReadHandler>(),
+      sendNotificationHandler: () => locator<_i3.SendNotificationHandler>(),
+      notificationReadAnalyticsHandler: () =>
+          locator<_i4.NotificationReadAnalyticsHandler>(),
+      pushNotificationDeliveryHandler: () =>
+          locator<_i6.PushNotificationDeliveryHandler>(),
+      getNotificationsHandler: () => locator<_i8.GetNotificationsHandler>(),
+      getUnreadNotificationCountHandler: () =>
+          locator<_i10.GetUnreadNotificationCountHandler>(),
+    );
+  }
 }
 
 /// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
@@ -90,6 +108,24 @@ class NotificationCqrsModule extends _i1.CqrsPackageModule {
        _getNotificationsHandler = getNotificationsHandler,
        _getUnreadNotificationCountHandler = getUnreadNotificationCountHandler,
        super();
+
+  /// Factory constructor that resolves all handlers from a dependency locator (e.g. GetIt.instance.get).
+  factory NotificationCqrsModule.fromLocator(
+    T Function<T extends Object>() locator,
+  ) {
+    return NotificationCqrsModule(
+      markNotificationAsReadHandler: () =>
+          locator<_i2.MarkNotificationAsReadHandler>(),
+      sendNotificationHandler: () => locator<_i3.SendNotificationHandler>(),
+      notificationReadAnalyticsHandler: () =>
+          locator<_i4.NotificationReadAnalyticsHandler>(),
+      pushNotificationDeliveryHandler: () =>
+          locator<_i6.PushNotificationDeliveryHandler>(),
+      getNotificationsHandler: () => locator<_i8.GetNotificationsHandler>(),
+      getUnreadNotificationCountHandler: () =>
+          locator<_i10.GetUnreadNotificationCountHandler>(),
+    );
+  }
 
   final _i2.MarkNotificationAsReadHandler Function()
   _markNotificationAsReadHandler;

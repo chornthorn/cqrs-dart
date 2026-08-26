@@ -15,6 +15,7 @@ class CqrsInit {
     this.modules = const [],
     this.useMicroPackage = false,
     this.includeDefaultFactories = true,
+    this.generateInjectable = false,
   });
 
   /// Creates a [CqrsInit] configured specifically for a micro-package / sub-module.
@@ -31,6 +32,7 @@ class CqrsInit {
     this.modules = const [],
     this.useMicroPackage = true,
     this.includeDefaultFactories = true,
+    this.generateInjectable = false,
   });
 
   /// Optional module/micro-package name (e.g. 'Auth', 'Orders', 'Billing').
@@ -58,47 +60,26 @@ class CqrsInit {
   /// List of [CqrsPackageModule] subclass types to compose in a root module.
   ///
   /// When [useMicroPackage] is `true` and this list is non-empty, the generator
-  /// disables handler scanning and produces a **compositor** [CqrsPackageModule]
-  /// subclass that accepts instances of each listed module and delegates
-  /// `register()` to [HandlerRegistry.registerModules].
-  ///
-  /// Example:
-  /// ```dart
-  /// @CqrsInit(
-  ///   moduleName: 'App',
-  ///   useMicroPackage: true,
-  ///   modules: [OrdersCqrsModule, InvoiceCqrsModule],
-  /// )
-  /// void configureCqrs() {}
-  /// ```
-  ///
-  /// Generates:
-  /// ```dart
-  /// class AppCqrsModule extends CqrsPackageModule {
-  ///   const AppCqrsModule({
-  ///     required OrdersCqrsModule ordersCqrsModule,
-  ///     required InvoiceCqrsModule invoiceCqrsModule,
-  ///   });
-  ///   @override
-  ///   void register(HandlerRegistry registry) =>
-  ///       registry.registerModules([ordersCqrsModule, invoiceCqrsModule]);
-  /// }
-  /// ```
+  /// produces a **compositor** [CqrsPackageModule] subclass that accepts instances
+  /// of each listed module and delegates `register()` to [HandlerRegistry.registerModules].
   final List<Type> modules;
 
   /// Whether to enable micro-package code generation.
-  ///
-  /// When `true`:
-  /// - If [modules] is non-empty, handler scanning is disabled and a compositor
-  ///   [CqrsPackageModule] class is emitted.
-  /// - If [modules] is empty, a feature [CqrsPackageModule] class is emitted
-  ///   in addition to the registry extension.
   ///
   /// Defaults to `false` for [CqrsInit] and `true` for [CqrsMicroPackage].
   final bool useMicroPackage;
 
   /// Whether handlers with 0-argument constructors should have default factory values.
   final bool includeDefaultFactories;
+
+  /// Whether to generate `.fromLocator(...)` factory constructors compatible with
+  /// service locators / DI containers like `GetIt` / `injectable`.
+  ///
+  /// When `true`:
+  /// - Generates `factory <Module>CqrsModule.fromLocator(T Function<T extends Object>() locator)`
+  ///   on feature modules and the root compositor module.
+  /// - Allows wiring in one line: `AppCqrsModule.fromLocator(getIt.get)`.
+  final bool generateInjectable;
 }
 
 /// Constant instance for `@cqrsInit` annotation.
@@ -121,6 +102,7 @@ class CqrsMicroPackage extends CqrsInit {
     super.modules,
     super.useMicroPackage = true,
     super.includeDefaultFactories,
+    super.generateInjectable = false,
   }) : super.microPackage();
 }
 

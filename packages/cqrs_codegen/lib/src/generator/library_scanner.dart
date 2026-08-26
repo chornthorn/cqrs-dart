@@ -108,6 +108,56 @@ class LibraryScanner {
     return true; // If no @CqrsInit is found, allow standalone micro-package generation
   }
 
+  /// Checks whether `@CqrsInit` exists in `lib/**.dart` with `generateInjectable: true`.
+  Future<bool> isInjectableGloballyEnabled(BuildStep buildStep) async {
+    final allLibAssets =
+        await buildStep.findAssets(Glob('lib/**.dart')).toList();
+    for (final asset in allLibAssets) {
+      if (_isGenerated(asset)) {
+        continue;
+      }
+      try {
+        if (!await buildStep.resolver.isLibrary(asset)) continue;
+        final lib = await buildStep.resolver.libraryFor(asset);
+        final reader = LibraryReader(lib);
+        final initAnnotated = reader.annotatedWith(_initChecker);
+        if (initAnnotated.isNotEmpty) {
+          final ann = initAnnotated.first.annotation;
+          final genInjectable =
+              ann.peek('generateInjectable')?.boolValue ?? false;
+          return genInjectable;
+        }
+
+        // Fallback AST inspection for @CqrsInit
+        final session = lib.session;
+        final parsed = session.getParsedLibraryByElement(lib);
+        if (parsed is ParsedLibraryResult) {
+          for (final unit in parsed.units) {
+            for (final decl in unit.unit.declarations) {
+              for (final meta in decl.metadata) {
+                if (meta.name.name == 'CqrsInit') {
+                  final args = meta.arguments?.arguments;
+                  if (args != null) {
+                    for (final arg in args) {
+                      if (arg is NamedArgument &&
+                          arg.name.lexeme == 'generateInjectable') {
+                        final expr = arg.argumentExpression;
+                        if (expr is BooleanLiteral) {
+                          return expr.value;
+                        }
+                      }
+                    }
+                  }
+                }
+              }
+            }
+          }
+        }
+      } catch (_) {}
+    }
+    return false;
+  }
+
   /// Extracts the module class name from an annotated [LibraryElement] or AST.
   String? findMicroPackageModuleClass(LibraryElement lib) {
     // 1. Try via source_gen TypeChecker

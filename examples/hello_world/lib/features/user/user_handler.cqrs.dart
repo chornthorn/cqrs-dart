@@ -33,6 +33,16 @@ extension AutoRegisterUserCqrs on _i1.HandlerRegistry {
     registerEvent<_i4.UserCreatedEvent>(welcomeEmailHandler);
     registerQuery<_i6.GetUserQuery, _i7.User?>(getUserHandler);
   }
+
+  /// Registers all handlers by resolving them from a service locator.
+  void registerUserHandlersFromLocator(T Function<T extends Object>() locator) {
+    registerUserHandlers(
+      createUserHandler: () => locator<_i2.CreateUserHandler>(),
+      analyticsHandler: () => locator<_i3.AnalyticsHandler>(),
+      welcomeEmailHandler: () => locator<_i5.WelcomeEmailHandler>(),
+      getUserHandler: () => locator<_i6.GetUserHandler>(),
+    );
+  }
 }
 
 /// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
@@ -57,6 +67,16 @@ class UserCqrsModule extends _i1.CqrsPackageModule {
        _welcomeEmailHandler = welcomeEmailHandler,
        _getUserHandler = getUserHandler,
        super();
+
+  /// Factory constructor that resolves all handlers from a dependency locator (e.g. GetIt.instance.get).
+  factory UserCqrsModule.fromLocator(T Function<T extends Object>() locator) {
+    return UserCqrsModule(
+      createUserHandler: () => locator<_i2.CreateUserHandler>(),
+      analyticsHandler: () => locator<_i3.AnalyticsHandler>(),
+      welcomeEmailHandler: () => locator<_i5.WelcomeEmailHandler>(),
+      getUserHandler: () => locator<_i6.GetUserHandler>(),
+    );
+  }
 
   final _i2.CreateUserHandler Function() _createUserHandler;
   final _i3.AnalyticsHandler Function() _analyticsHandler;
