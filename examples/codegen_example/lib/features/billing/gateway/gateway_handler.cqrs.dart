@@ -8,28 +8,28 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes, prefer_initializing_formals
 
 import 'package:cqrs/cqrs.dart' as _i1;
-import 'package:codegen_example/features/billing/gateway/gateway.dart' as _i2;
-import 'package:codegen_example/features/billing/gateway/thorn_demo.dart'
-    as _i3;
+import 'package:codegen_example/features/billing/gateway/demo/thorn_demo.dart'
+    as _i2;
+import 'package:codegen_example/features/billing/gateway/gateway.dart' as _i3;
 
 /// Generated registration helper for discovered CQRS handlers (AutoRegisterGatewayCqrs).
 extension AutoRegisterGatewayCqrs on _i1.HandlerRegistry {
   void registerGatewayHandlers({
-    _i2.AuthorizePaymentCommandHandler Function()
+    _i2.FooBarEventHandler Function() fooBarEventHandler =
+        _i2.FooBarEventHandler.new,
+    _i3.AuthorizePaymentCommandHandler Function()
         authorizePaymentCommandHandler =
-        _i2.AuthorizePaymentCommandHandler.new,
-    _i2.GetGatewayStatusQueryHandler Function() getGatewayStatusQueryHandler =
-        _i2.GetGatewayStatusQueryHandler.new,
-    _i3.FooBarEventHandler Function() fooBarEventHandler =
-        _i3.FooBarEventHandler.new,
+        _i3.AuthorizePaymentCommandHandler.new,
+    _i3.GetGatewayStatusQueryHandler Function() getGatewayStatusQueryHandler =
+        _i3.GetGatewayStatusQueryHandler.new,
   }) {
-    registerCommand<_i2.AuthorizePaymentCommand, String>(
+    registerEvent<_i2.FooBarEvent>(fooBarEventHandler);
+    registerCommand<_i3.AuthorizePaymentCommand, String>(
       authorizePaymentCommandHandler,
     );
-    registerQuery<_i2.GetGatewayStatusQuery, bool>(
+    registerQuery<_i3.GetGatewayStatusQuery, bool>(
       getGatewayStatusQueryHandler,
     );
-    registerEvent<_i3.FooBarEvent>(fooBarEventHandler);
   }
 }
 
@@ -38,35 +38,35 @@ extension AutoRegisterGatewayCqrs on _i1.HandlerRegistry {
 /// Usage:
 /// ```dart
 /// registry.registerModule(GatewayCqrsModule(
-///   authorizePaymentCommandHandler: AuthorizePaymentCommandHandler.new,
+///   fooBarEventHandler: FooBarEventHandler.new,
 /// ));
 /// ```
 class GatewayCqrsModule extends _i1.CqrsPackageModule {
   const GatewayCqrsModule({
-    _i2.AuthorizePaymentCommandHandler Function()
+    _i2.FooBarEventHandler Function() fooBarEventHandler =
+        _i2.FooBarEventHandler.new,
+    _i3.AuthorizePaymentCommandHandler Function()
         authorizePaymentCommandHandler =
-        _i2.AuthorizePaymentCommandHandler.new,
-    _i2.GetGatewayStatusQueryHandler Function() getGatewayStatusQueryHandler =
-        _i2.GetGatewayStatusQueryHandler.new,
-    _i3.FooBarEventHandler Function() fooBarEventHandler =
-        _i3.FooBarEventHandler.new,
-  }) : _authorizePaymentCommandHandler = authorizePaymentCommandHandler,
+        _i3.AuthorizePaymentCommandHandler.new,
+    _i3.GetGatewayStatusQueryHandler Function() getGatewayStatusQueryHandler =
+        _i3.GetGatewayStatusQueryHandler.new,
+  }) : _fooBarEventHandler = fooBarEventHandler,
+       _authorizePaymentCommandHandler = authorizePaymentCommandHandler,
        _getGatewayStatusQueryHandler = getGatewayStatusQueryHandler,
-       _fooBarEventHandler = fooBarEventHandler,
        super();
 
-  final _i2.AuthorizePaymentCommandHandler Function()
+  final _i2.FooBarEventHandler Function() _fooBarEventHandler;
+  final _i3.AuthorizePaymentCommandHandler Function()
   _authorizePaymentCommandHandler;
-  final _i2.GetGatewayStatusQueryHandler Function()
+  final _i3.GetGatewayStatusQueryHandler Function()
   _getGatewayStatusQueryHandler;
-  final _i3.FooBarEventHandler Function() _fooBarEventHandler;
 
   @override
   void register(_i1.HandlerRegistry registry) {
     registry.registerGatewayHandlers(
+      fooBarEventHandler: _fooBarEventHandler,
       authorizePaymentCommandHandler: _authorizePaymentCommandHandler,
       getGatewayStatusQueryHandler: _getGatewayStatusQueryHandler,
-      fooBarEventHandler: _fooBarEventHandler,
     );
   }
 }

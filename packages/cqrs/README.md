@@ -4,10 +4,10 @@ Lightweight, **pure Dart** CQRS (Command Query Responsibility Segregation) and e
 
 ## Features
 
-- 🎯 **Pure Dart**: Zero runtime dependencies. Compatible with Flutter, pure Dart, server-side Dart, and CLI apps.
-- 📦 **Strongly Typed**: Clean generic contracts for `Command<TResult>`, `Query<TResult>`, and `Event`.
-- 🔌 **Pluggable & Container Agnostic**: Built-in default in-process registry via `CqrsDispatcher()`, or connect to any DI framework (`GetIt`, `Riverpod`, etc.) via `HandlerRegistry.resolver`.
-- 🧅 **Pipeline & Middlewares**: Built-in support for interceptors/middleware (logging, tracing, metrics, validation, retries).
+- **Pure Dart**: Zero runtime dependencies. Compatible with Flutter, pure Dart, server-side Dart, and CLI apps.
+- **Strongly Typed**: Clean generic contracts for `Command<TResult>`, `Query<TResult>`, and `Event`.
+- **Pluggable & Container Agnostic**: Built-in default in-process registry via `CqrsDispatcher()`, or connect to any DI framework (`GetIt`, `Riverpod`, etc.) via `HandlerRegistry.resolver`.
+- **Pipeline & Middlewares**: Built-in support for interceptors/middleware (logging, tracing, metrics, validation, retries).
 
 ## Getting Started
 
