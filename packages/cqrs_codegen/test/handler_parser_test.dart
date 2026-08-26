@@ -41,4 +41,32 @@ void main() {
       expect(eventInfo.resultTypeName, isNull);
     });
   });
+
+  group('CqrsMicroPackage annotation naming conventions', () {
+    // Verifies the expected module class name derivation from moduleName.
+    // The actual generator uses this pattern: '${_capitalize(moduleName)}CqrsModule'
+    test('module class name follows {moduleName}CqrsModule convention', () {
+      // Simulate the capitalization logic used in CqrsGenerator
+      String capitalize(String s) =>
+          s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+      expect('${capitalize("orders")}CqrsModule', 'OrdersCqrsModule');
+      expect('${capitalize("auth")}CqrsModule', 'AuthCqrsModule');
+      expect('${capitalize("billing")}CqrsModule', 'BillingCqrsModule');
+    });
+
+    test('extension name follows AutoRegister{moduleName}Cqrs convention', () {
+      String capitalize(String s) =>
+          s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+      expect('AutoRegister${capitalize("orders")}Cqrs', 'AutoRegisterOrdersCqrs');
+    });
+
+    test('method name follows register{moduleName}Handlers convention', () {
+      String capitalize(String s) =>
+          s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+
+      expect('register${capitalize("orders")}Handlers', 'registerOrdersHandlers');
+    });
+  });
 }

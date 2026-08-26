@@ -6,19 +6,30 @@ part of 'cqrs_init.dart';
 // CqrsGenerator
 // **************************************************************************
 
-/// Generated registration helper for discovered CQRS handlers.
-extension AutoRegisterCqrs on HandlerRegistry {
-  void registerGeneratedHandlers({
-    required PlaceOrderCommandHandler Function() placeOrderCommandHandler,
-    required GetOrderQueryHandler Function() getOrderQueryHandler,
-    InvoiceNotificationHandler Function() invoiceNotificationHandler =
-        InvoiceNotificationHandler.new,
-    OrderAnalyticsHandler Function() orderAnalyticsHandler =
-        OrderAnalyticsHandler.new,
-  }) {
-    registerCommand<PlaceOrderCommand, String>(placeOrderCommandHandler);
-    registerQuery<GetOrderQuery, Order?>(getOrderQueryHandler);
-    registerEvent<OrderPlacedEvent>(invoiceNotificationHandler);
-    registerEvent<OrderPlacedEvent>(orderAnalyticsHandler);
+// ignore_for_file: prefer_initializing_formals
+
+/// Generated compositor [CqrsPackageModule] that aggregates sub-modules.
+///
+/// Usage:
+/// ```dart
+/// registry.registerModule(AppCqrsModule(
+///   ordersCqrsModule: OrdersCqrsModule(...),
+///   invoiceCqrsModule: InvoiceCqrsModule(...),
+/// ));
+/// ```
+class AppCqrsModule extends CqrsPackageModule {
+  const AppCqrsModule({
+    required OrdersCqrsModule ordersCqrsModule,
+    required InvoiceCqrsModule invoiceCqrsModule,
+  }) : _ordersCqrsModule = ordersCqrsModule,
+       _invoiceCqrsModule = invoiceCqrsModule,
+       super();
+
+  final OrdersCqrsModule _ordersCqrsModule;
+  final InvoiceCqrsModule _invoiceCqrsModule;
+
+  @override
+  void register(HandlerRegistry registry) {
+    registry.registerModules([_ordersCqrsModule, _invoiceCqrsModule]);
   }
 }
