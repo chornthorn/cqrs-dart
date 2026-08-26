@@ -1,3 +1,5 @@
+import 'package:codegen_example/features/billing/billing_cqrs_module.dart';
+import 'package:codegen_example/features/billing/gateway/gateway_cqrs_module.dart';
 import 'package:codegen_example/features/invoice/invoice_cqrs_module.dart';
 import 'package:codegen_example/features/orders/orders_cqrs_module.dart';
 import 'package:cqrs/cqrs.dart';
@@ -105,6 +107,51 @@ void main() {
 
       // Audit log should have captured the event
       expect(auditLogHandler.auditLog, hasLength(1));
+    });
+  });
+
+  group('Independent Micro-packages with Nested Sub-packages (Billing + Gateway)', () {
+    late CqrsDispatcher dispatcher;
+    late BillingNotificationHandler billingNotificationHandler;
+
+    setUp(() {
+      dispatcher = CqrsDispatcher();
+      billingNotificationHandler = BillingNotificationHandler();
+
+      // Register BillingCqrsModule and GatewayCqrsModule as independent modules
+      dispatcher.registry.registerModules([
+        BillingCqrsModule(
+          chargeBillingCommandHandler: () =>
+              ChargeBillingCommandHandler(publisher: dispatcher),
+          billingNotificationHandler: () => billingNotificationHandler,
+        ),
+        const GatewayCqrsModule(),
+      ]);
+    });
+
+    test('executes direct billing command and publishes event', () async {
+      final chargeId = await dispatcher.command(
+        const ChargeBillingCommand(customerId: 'CUST-100', amount: 299.00),
+      );
+
+      expect(chargeId, 'CHG-CUST-100');
+      expect(billingNotificationHandler.notifications, hasLength(1));
+      expect(
+        billingNotificationHandler.notifications.first,
+        contains('CHG-CUST-100'),
+      );
+    });
+
+    test('executes nested gateway module handlers', () async {
+      final authCode = await dispatcher.command(
+        const AuthorizePaymentCommand(transactionId: 'TX-999', amount: 299.00),
+      );
+      expect(authCode, 'AUTH-TX-999-299');
+
+      final isGatewayOk = await dispatcher.query(
+        const GetGatewayStatusQuery(gatewayId: 'STRIPE_PRIMARY'),
+      );
+      expect(isGatewayOk, isTrue);
     });
   });
 }

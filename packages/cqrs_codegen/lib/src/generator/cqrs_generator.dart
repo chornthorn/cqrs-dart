@@ -104,9 +104,6 @@ class CqrsGenerator extends Generator {
         // Fallback silently if AST extraction is unavailable.
       }
     }
-    final bool isCompositor = useMicroPackage && moduleTypeNames.isNotEmpty;
-    final bool generateModuleClass = useMicroPackage && moduleTypeNames.isEmpty;
-
     // Resolve naming for micro-packages or standard modules
     String extensionName;
     if (customExtensionName != null && customExtensionName.isNotEmpty) {
@@ -136,31 +133,11 @@ class CqrsGenerator extends Generator {
       moduleClassName = 'GeneratedCqrsModule';
     }
 
-    // -------------------------------------------------------------------
-    // COMPOSITOR MODE: useMicroPackage: true and modules: [...] is non-empty.
-    // Handler scanning is DISABLED. Only the compositor CqrsPackageModule
-    // class is emitted — no extension, no scan.
-    // -------------------------------------------------------------------
-    if (isCompositor) {
-      final buffer = StringBuffer();
-      buffer.writeln('// ignore_for_file: prefer_initializing_formals');
-      buffer.writeln();
-      _writeCompositorModuleClass(
-        buffer,
-        moduleClassName: moduleClassName,
-        moduleTypeNames: moduleTypeNames,
-      );
-      return buffer.toString();
-    }
-
-    // -------------------------------------------------------------------
-    // SCAN MODE: scan exported classes for handlers and emit the
-    // HandlerRegistry extension (+ micro-package class if useMicroPackage is true).
-    // -------------------------------------------------------------------
-
-    // Collect all class elements accessible from this library and its parts/exports
+    // Collect all class elements and discover nested micro-package boundaries
+    final discoveredModuleClasses = <String>[...moduleTypeNames];
     final handlers = <HandlerInfo>[];
     final visitedClasses = <String>{};
+    final visitedLibraries = <LibraryElement>{};
 
     void inspectClass(ClassElement classElement) {
       final name = classElement.name;
@@ -173,124 +150,230 @@ class CqrsGenerator extends Generator {
       }
     }
 
-    // Transitively inspect classes from the current library and all exported libraries
-    final visitedLibraries = <LibraryElement>{};
+    final bool isRootCompositor = !isMicroPackage && useMicroPackage;
 
-    void visitLibrary(LibraryElement lib) {
+    void visitLibrary(LibraryElement lib, {bool isRoot = false}) {
       if (lib.isInSdk || !visitedLibraries.add(lib)) return;
-      for (final c in lib.classes) {
-        inspectClass(c);
+
+      if (!isRoot) {
+        final nestedModuleClass = _findMicroPackageModuleClass(lib);
+        if (nestedModuleClass != null) {
+          if (isRootCompositor) {
+            // For root init: collect EVERY micro-package module in the entire tree,
+            // even nested under nested, so every module is registered manually in root init.
+            if (!discoveredModuleClasses.contains(nestedModuleClass)) {
+              discoveredModuleClasses.add(nestedModuleClass);
+            }
+          } else {
+            // For a feature micro-package: stop at any nested micro-package boundary
+            // so each micro-package module manages only its own direct handlers.
+            return;
+          }
+        }
       }
+
+      // Inspect classes in this library if not root compositor
+      if (!isRootCompositor) {
+        for (final c in lib.classes) {
+          inspectClass(c);
+        }
+      }
+
+      // Recursively scan exported libraries
       for (final exported in lib.exportedLibraries) {
-        visitLibrary(exported);
+        visitLibrary(exported, isRoot: false);
       }
     }
 
-    for (final c in library.classes) {
-      inspectClass(c);
-    }
+    // Start traversal from root library
+    visitLibrary(library.element, isRoot: true);
 
-    for (final exported in library.element.exportedLibraries) {
-      visitLibrary(exported);
-    }
+    // If the user explicitly declared `modules: [...]` in the annotation, use that
+    // exact list; otherwise fall back to auto-discovered modules.
+    final effectiveModuleClasses =
+        moduleTypeNames.isNotEmpty ? moduleTypeNames : discoveredModuleClasses;
+
+    final bool shouldEmitModuleClass =
+        useMicroPackage && (handlers.isNotEmpty || effectiveModuleClasses.isNotEmpty);
 
     final buffer = StringBuffer();
 
-    if (handlers.isEmpty) {
+    // 1. Emit HandlerRegistry extension if direct handlers exist
+    if (handlers.isNotEmpty) {
+      buffer.writeln(
+        '/// Generated registration helper for discovered CQRS handlers ($extensionName).',
+      );
+      buffer.writeln('extension $extensionName on HandlerRegistry {');
+      buffer.writeln('  void $methodName({');
+
+      for (final handler in handlers) {
+        final paramType = '${handler.className} Function()';
+        if (handler.hasDefaultConstructor && includeDefaults) {
+          buffer.writeln('    $paramType ${handler.paramName} = ${handler.className}.new,');
+        } else {
+          buffer.writeln('    required $paramType ${handler.paramName},');
+        }
+      }
+
+      buffer.writeln('  }) {');
+
+      for (final handler in handlers) {
+        switch (handler.kind) {
+          case HandlerKind.command:
+            buffer.writeln(
+              '    registerCommand<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
+            );
+          case HandlerKind.query:
+            buffer.writeln(
+              '    registerQuery<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
+            );
+          case HandlerKind.event:
+            buffer.writeln(
+              '    registerEvent<${handler.messageTypeName}>(${handler.paramName});',
+            );
+        }
+      }
+
+      buffer.writeln('  }');
+      buffer.writeln('}');
+    } else if (!shouldEmitModuleClass) {
       buffer.writeln('// No CQRS handlers found in scope.');
       buffer.writeln('extension $extensionName on HandlerRegistry {');
       buffer.writeln('  void $methodName() {}');
       buffer.writeln('}');
-
-      if (generateModuleClass) {
-        buffer.writeln();
-        _writeEmptyModuleClass(buffer, moduleClassName, methodName);
-      }
-
-      return buffer.toString();
     }
 
-    // --- Extension on HandlerRegistry ---
-    buffer.writeln(
-      '/// Generated registration helper for discovered CQRS handlers ($extensionName).',
-    );
-    buffer.writeln('extension $extensionName on HandlerRegistry {');
-    buffer.writeln('  void $methodName({');
-
-    for (final handler in handlers) {
-      final paramType = '${handler.className} Function()';
-      if (handler.hasDefaultConstructor && includeDefaults) {
-        buffer.writeln('    $paramType ${handler.paramName} = ${handler.className}.new,');
-      } else {
-        buffer.writeln('    required $paramType ${handler.paramName},');
-      }
-    }
-
-    buffer.writeln('  }) {');
-
-    for (final handler in handlers) {
-      switch (handler.kind) {
-        case HandlerKind.command:
-          buffer.writeln(
-            '    registerCommand<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
-          );
-        case HandlerKind.query:
-          buffer.writeln(
-            '    registerQuery<${handler.messageTypeName}, ${handler.resultTypeName}>(${handler.paramName});',
-          );
-        case HandlerKind.event:
-          buffer.writeln(
-            '    registerEvent<${handler.messageTypeName}>(${handler.paramName});',
-          );
-      }
-    }
-
-    buffer.writeln('  }');
-    buffer.writeln('}');
-
-    // --- Handler-scan CqrsPackageModule (when useMicroPackage is true) ---
-    if (generateModuleClass) {
+    // 2. Emit CqrsPackageModule subclass if useMicroPackage is true
+    if (useMicroPackage) {
       buffer.writeln(
         '// ignore_for_file: prefer_initializing_formals',
       );
       buffer.writeln();
-      _writeModuleClass(
-        buffer,
-        moduleClassName: moduleClassName,
-        methodName: methodName,
-        handlers: handlers,
-        includeDefaults: includeDefaults,
-      );
+      if (handlers.isEmpty && effectiveModuleClasses.isEmpty) {
+        _writeEmptyModuleClass(buffer, moduleClassName, methodName);
+      } else {
+        _writeUnifiedModuleClass(
+          buffer,
+          moduleClassName: moduleClassName,
+          methodName: methodName,
+          handlers: handlers,
+          subModuleTypeNames: effectiveModuleClasses,
+          includeDefaults: includeDefaults,
+        );
+      }
     }
 
     return buffer.toString();
   }
 
-  /// Emits a compositor [CqrsPackageModule] that aggregates a fixed list of
-  /// sub-modules declared by the user in the annotation's `modules` field.
-  ///
-  /// Each sub-module is accepted as a required named constructor parameter and
-  /// stored in a private field. [register] delegates to
-  /// [HandlerRegistry.registerModules].
-  void _writeCompositorModuleClass(
+  /// Checks if [lib] contains a `@CqrsMicroPackage` or `@CqrsInit(useMicroPackage: true)`
+  /// annotation. If so, returns the module class name (e.g. `'OrdersCqrsModule'`).
+  String? _findMicroPackageModuleClass(LibraryElement lib) {
+    // 1. Try via source_gen TypeChecker
+    try {
+      final reader = LibraryReader(lib);
+      final annotated = reader.annotatedWith(_anyChecker);
+      if (annotated.isNotEmpty) {
+        final ann = annotated.first.annotation;
+        final typeName = ann.objectValue.type?.element?.name ?? '';
+        final bool isMicro = typeName == 'CqrsMicroPackage';
+        final bool useMicro = ann.peek('useMicroPackage')?.boolValue ?? isMicro;
+        if (useMicro) {
+          final customClassName = ann.peek('moduleClassName')?.stringValue;
+          if (customClassName != null && customClassName.isNotEmpty) {
+            return customClassName;
+          }
+          final modName = ann.peek('moduleName')?.stringValue;
+          if (modName != null && modName.isNotEmpty) {
+            return '${_capitalize(modName)}CqrsModule';
+          }
+          return 'GeneratedCqrsModule';
+        }
+      }
+    } catch (_) {}
+
+    // 2. Fallback via AST inspection
+    try {
+      final session = lib.session;
+      final parsedLib = session.getParsedLibraryByElement(lib);
+      if (parsedLib is ParsedLibraryResult) {
+        for (final unit in parsedLib.units) {
+          for (final decl in unit.unit.declarations) {
+            for (final ann in decl.metadata) {
+              final annName = ann.name.name;
+              if (annName == 'CqrsMicroPackage' || annName == 'CqrsInit') {
+                bool isMicro = annName == 'CqrsMicroPackage';
+                String? modName;
+                String? customClass;
+                final args = ann.arguments?.arguments;
+                if (args != null) {
+                  for (final arg in args) {
+                    if (arg is NamedArgument) {
+                      if (arg.name.lexeme == 'useMicroPackage') {
+                        final expr = arg.argumentExpression;
+                        if (expr is BooleanLiteral) {
+                          isMicro = expr.value;
+                        }
+                      } else if (arg.name.lexeme == 'moduleName') {
+                        modName = arg.argumentExpression
+                            .toSource()
+                            .replaceAll("'", '')
+                            .replaceAll('"', '');
+                      } else if (arg.name.lexeme == 'moduleClassName') {
+                        customClass = arg.argumentExpression
+                            .toSource()
+                            .replaceAll("'", '')
+                            .replaceAll('"', '');
+                      }
+                    }
+                  }
+                }
+                if (isMicro) {
+                  if (customClass != null && customClass.isNotEmpty) {
+                    return customClass;
+                  }
+                  if (modName != null && modName.isNotEmpty) {
+                    return '${_capitalize(modName)}CqrsModule';
+                  }
+                  return 'GeneratedCqrsModule';
+                }
+              }
+            }
+          }
+        }
+      }
+    } catch (_) {}
+
+    return null;
+  }
+
+  /// Emits a unified [CqrsPackageModule] subclass that holds direct handler factories
+  /// and/or nested sub-module instances.
+  void _writeUnifiedModuleClass(
     StringBuffer buffer, {
     required String moduleClassName,
-    required List<String> moduleTypeNames,
+    required String methodName,
+    required List<HandlerInfo> handlers,
+    required List<String> subModuleTypeNames,
+    required bool includeDefaults,
   }) {
-    // Derive a camelCase param/field name from each class name:
-    // OrdersCqrsModule → ordersCqrsModule
     String paramName(String typeName) =>
         typeName[0].toLowerCase() + typeName.substring(1);
 
     buffer.writeln(
-      '/// Generated compositor [CqrsPackageModule] that aggregates sub-modules.',
+      '/// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.',
     );
     buffer.writeln('///');
     buffer.writeln('/// Usage:');
     buffer.writeln('/// ```dart');
     buffer.writeln('/// registry.registerModule($moduleClassName(');
-    for (final t in moduleTypeNames) {
+    for (final t in subModuleTypeNames) {
       buffer.writeln('///   ${paramName(t)}: $t(...),');
+    }
+    final requiredHandlers =
+        handlers.where((h) => !h.hasDefaultConstructor || !includeDefaults);
+    for (final h in requiredHandlers) {
+      buffer.writeln('///   ${h.paramName}: ${h.className}.new,');
     }
     buffer.writeln('/// ));');
     buffer.writeln('/// ```');
@@ -298,33 +381,58 @@ class CqrsGenerator extends Generator {
 
     // Constructor
     buffer.writeln('  const $moduleClassName({');
-    for (final t in moduleTypeNames) {
+    for (final t in subModuleTypeNames) {
       buffer.writeln('    required $t ${paramName(t)},');
+    }
+    for (final handler in handlers) {
+      final paramType = '${handler.className} Function()';
+      if (handler.hasDefaultConstructor && includeDefaults) {
+        buffer.writeln(
+          '    $paramType ${handler.paramName} = ${handler.className}.new,',
+        );
+      } else {
+        buffer.writeln('    required $paramType ${handler.paramName},');
+      }
     }
     buffer.writeln('  }) :');
 
     // Initializer list
-    final inits = moduleTypeNames
-        .map((t) => '_${paramName(t)} = ${paramName(t)}')
-        .join(',\n        ');
-    buffer.writeln('        $inits,');
+    final inits = <String>[
+      for (final t in subModuleTypeNames) '_${paramName(t)} = ${paramName(t)}',
+      for (final h in handlers) '_${h.paramName} = ${h.paramName}',
+    ];
+    buffer.writeln('        ${inits.join(',\n        ')},');
     buffer.writeln('        super();');
     buffer.writeln();
 
     // Private fields
-    for (final t in moduleTypeNames) {
+    for (final t in subModuleTypeNames) {
       buffer.writeln('  final $t _${paramName(t)};');
+    }
+    for (final handler in handlers) {
+      buffer.writeln(
+        '  final ${handler.className} Function() _${handler.paramName};',
+      );
     }
     buffer.writeln();
 
     // register() override
     buffer.writeln('  @override');
     buffer.writeln('  void register(HandlerRegistry registry) {');
-    buffer.writeln('    registry.registerModules([');
-    for (final t in moduleTypeNames) {
-      buffer.writeln('      _${paramName(t)},');
+    if (handlers.isNotEmpty) {
+      buffer.writeln('    registry.$methodName(');
+      for (final handler in handlers) {
+        buffer.writeln('      ${handler.paramName}: _${handler.paramName},');
+      }
+      buffer.writeln('    );');
     }
-    buffer.writeln('    ]);');
+    if (subModuleTypeNames.isNotEmpty) {
+      buffer.writeln('    registry.registerModules([');
+      for (final t in subModuleTypeNames) {
+        buffer.writeln('      _${paramName(t)},');
+      }
+      buffer.writeln('    ]);');
+    }
     buffer.writeln('  }');
     buffer.writeln('}');
   }
@@ -341,73 +449,6 @@ class CqrsGenerator extends Generator {
     buffer.writeln();
     buffer.writeln('  @override');
     buffer.writeln('  void register(HandlerRegistry registry) {}');
-    buffer.writeln('}');
-  }
-
-  /// Emits a concrete [CqrsPackageModule] subclass that holds factory functions
-  /// as constructor parameters and delegates [register] to the generated extension.
-  void _writeModuleClass(
-    StringBuffer buffer, {
-    required String moduleClassName,
-    required String methodName,
-    required List<HandlerInfo> handlers,
-    required bool includeDefaults,
-  }) {
-    buffer.writeln(
-      '/// Generated [CqrsPackageModule] for auto-discovered CQRS handlers.',
-    );
-    buffer.writeln('///');
-    buffer.writeln('/// Usage:');
-    buffer.writeln('/// ```dart');
-    buffer.writeln('/// registry.registerModule($moduleClassName(');
-    final requiredHandlers =
-        handlers.where((h) => !h.hasDefaultConstructor || !includeDefaults);
-    for (final h in requiredHandlers) {
-      buffer.writeln('///   ${h.paramName}: ${h.className}.new,');
-    }
-    buffer.writeln('/// ));');
-    buffer.writeln('/// ```');
-    buffer.writeln('class $moduleClassName extends CqrsPackageModule {');
-
-    // Constructor
-    buffer.writeln('  const $moduleClassName({');
-    for (final handler in handlers) {
-      final paramType = '${handler.className} Function()';
-      if (handler.hasDefaultConstructor && includeDefaults) {
-        buffer.writeln(
-          '    $paramType ${handler.paramName} = ${handler.className}.new,',
-        );
-      } else {
-        buffer.writeln('    required $paramType ${handler.paramName},');
-      }
-    }
-    buffer.writeln('  }) :');
-
-    // Initializer list: bind each param to a private field
-    final inits = handlers
-        .map((h) => '_${h.paramName} = ${h.paramName}')
-        .join(',\n        ');
-    buffer.writeln('        $inits,');
-    buffer.writeln('        super();');
-    buffer.writeln();
-
-    // Private fields
-    for (final handler in handlers) {
-      buffer.writeln(
-        '  final ${handler.className} Function() _${handler.paramName};',
-      );
-    }
-    buffer.writeln();
-
-    // register() override
-    buffer.writeln('  @override');
-    buffer.writeln('  void register(HandlerRegistry registry) {');
-    buffer.writeln('    registry.$methodName(');
-    for (final handler in handlers) {
-      buffer.writeln('      ${handler.paramName}: _${handler.paramName},');
-    }
-    buffer.writeln('    );');
-    buffer.writeln('  }');
     buffer.writeln('}');
   }
 

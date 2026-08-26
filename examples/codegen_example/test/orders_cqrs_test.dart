@@ -76,10 +76,14 @@ void main() {
       invoiceHandler = InvoiceNotificationHandler();
       auditLogHandler = InvoiceAuditLogHandler();
 
-      // One call wires BOTH micro-packages via the generated AppCqrsModule.
-      // The compositor delegates to registerModules([OrdersCqrsModule, InvoiceCqrsModule]).
+      // One call wires all micro-packages via the generated AppCqrsModule compositor.
       dispatcher.registry.registerModule(
         AppCqrsModule(
+          billingCqrsModule: BillingCqrsModule(
+            chargeBillingCommandHandler: () =>
+                ChargeBillingCommandHandler(publisher: dispatcher),
+          ),
+          gatewayCqrsModule: const GatewayCqrsModule(),
           ordersCqrsModule: OrdersCqrsModule(
             placeOrderCommandHandler: () => PlaceOrderCommandHandler(
               repository: orderRepository,

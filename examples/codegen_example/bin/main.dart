@@ -9,10 +9,17 @@ void main() async {
   final invoiceHandler = InvoiceNotificationHandler();
   final analyticsHandler = OrderAnalyticsHandler();
   final auditLogHandler = InvoiceAuditLogHandler();
+  final billingNotificationHandler = BillingNotificationHandler();
 
-  // Wire both micro-packages via the generated AppCqrsModule compositor.
+  // Wire all micro-packages (orders, invoice, billing, gateway) via AppCqrsModule.
   dispatcher.registry.registerModule(
     AppCqrsModule(
+      billingCqrsModule: BillingCqrsModule(
+        chargeBillingCommandHandler: () =>
+            ChargeBillingCommandHandler(publisher: dispatcher),
+        billingNotificationHandler: () => billingNotificationHandler,
+      ),
+      gatewayCqrsModule: const GatewayCqrsModule(),
       ordersCqrsModule: OrdersCqrsModule(
         placeOrderCommandHandler: () => PlaceOrderCommandHandler(
           repository: orderRepository,
@@ -57,10 +64,17 @@ void main() async {
   );
   print('Invoice ID: ${invoice.id}');
 
-  print('\n--- Invoice audit log ---');
-  for (final entry in auditLogHandler.auditLog) {
-    print('  $entry');
-  }
+  print('\n--- Charging Billing (Hybrid Feature) ---');
+  final chargeId = await dispatcher.command(
+    ChargeBillingCommand(customerId: 'CUST-007', amount: 2499.00),
+  );
+  print('Charge ID: $chargeId');
+
+  print('\n--- Authorizing Payment Gateway (Nested Sub-Module) ---');
+  final authCode = await dispatcher.command(
+    AuthorizePaymentCommand(transactionId: chargeId, amount: 2499.00),
+  );
+  print('Authorization code: $authCode');
 
   print('\n--- Querying Order ---');
   final order = await dispatcher.query(GetOrderQuery(orderId));

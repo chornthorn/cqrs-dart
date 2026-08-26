@@ -24,7 +24,7 @@ extension AutoRegisterInvoiceCqrs on HandlerRegistry {
 }
 // ignore_for_file: prefer_initializing_formals
 
-/// Generated [CqrsPackageModule] for auto-discovered CQRS handlers.
+/// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
 ///
 /// Usage:
 /// ```dart
