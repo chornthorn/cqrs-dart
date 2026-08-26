@@ -173,18 +173,25 @@ class CqrsGenerator extends Generator {
       }
     }
 
-    // Inspect classes in the current library
+    // Transitively inspect classes from the current library and all exported libraries
+    final visitedLibraries = <LibraryElement>{};
+
+    void visitLibrary(LibraryElement lib) {
+      if (lib.isInSdk || !visitedLibraries.add(lib)) return;
+      for (final c in lib.classes) {
+        inspectClass(c);
+      }
+      for (final exported in lib.exportedLibraries) {
+        visitLibrary(exported);
+      }
+    }
+
     for (final c in library.classes) {
       inspectClass(c);
     }
 
-    // Inspect classes from exported libraries
-    final libElement = library.element;
-    for (final exported in libElement.exportedLibraries) {
-      if (exported.isInSdk) continue;
-      for (final c in exported.classes) {
-        inspectClass(c);
-      }
+    for (final exported in library.element.exportedLibraries) {
+      visitLibrary(exported);
     }
 
     final buffer = StringBuffer();
