@@ -22,7 +22,7 @@ void main() async {
   // 2. Demonstrate Dio injection
   final dio = getIt<Dio>();
   // ignore: avoid_print
-  print('\n🌐 0. Injected Dio Instance (from @thirdParty):');
+  print('\n🌐 0. Injected Dio Instance (from @externalModule):');
   // ignore: avoid_print
   print('   Base URL: ${dio.options.baseUrl}');
   // ignore: avoid_print

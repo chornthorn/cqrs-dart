@@ -60,13 +60,13 @@ class FactoryMethod {
 /// Constant instance for [@factoryMethod] annotation.
 const factoryMethod = FactoryMethod();
 
-/// Marks a class as a third-party dependency provider module.
-class ThirdParty {
-  const ThirdParty();
+/// Marks a class as an external module dependency provider.
+class ExternalModule {
+  const ExternalModule();
 }
 
-/// Constant instance for [@thirdParty] annotation.
-const thirdParty = ThirdParty();
+/// Constant instance for [@externalModule] annotation.
+const externalModule = ExternalModule();
 
 /// Specifies explicit registration order priority.
 class Order {

@@ -6,7 +6,7 @@ import 'injection.config.dart';
 
 final getIt = GetIt.instance;
 
-@thirdParty
+@externalModule
 abstract class CqrsModule {
   @Injectable(scope: Scope.singleton)
   CqrsDispatcher get cqrsDispatcher => CqrsDispatcher()

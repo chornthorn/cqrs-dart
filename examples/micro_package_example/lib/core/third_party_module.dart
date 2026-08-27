@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
-@thirdParty
+@externalModule
 abstract class ThirdPartyModule {
   @Inject('baseUrl')
   String get baseUrl => 'https://api.example.com';
