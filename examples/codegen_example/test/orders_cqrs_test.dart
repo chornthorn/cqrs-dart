@@ -84,6 +84,7 @@ void main() {
                 ChargeBillingCommandHandler(publisher: dispatcher),
           ),
           gatewayCqrsModule: const GatewayCqrsModule(),
+          thornDemoCqrsModule: const ThornDemoCqrsModule(),
           ordersCqrsModule: OrdersCqrsModule(
             placeOrderCommandHandler: () => PlaceOrderCommandHandler(
               repository: orderRepository,

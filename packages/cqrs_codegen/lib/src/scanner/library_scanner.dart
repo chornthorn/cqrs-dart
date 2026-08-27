@@ -203,6 +203,17 @@ class LibraryScanner {
     return null;
   }
 
+  /// Converts an [AssetId] into its generated `.cqrs.dart` package URI string.
+  static Uri assetToCqrsPackageUri(AssetId assetId) {
+    var path = assetId.path.startsWith('lib/')
+        ? assetId.path.substring(4)
+        : assetId.path;
+    if (path.endsWith('.dart') && !path.endsWith('.cqrs.dart')) {
+      path = '${path.substring(0, path.length - 5)}.cqrs.dart';
+    }
+    return Uri.parse('package:${assetId.package}/$path');
+  }
+
   /// Converts an [AssetId] into its absolute package URI string.
   static Uri assetToPackageUri(AssetId assetId) {
     final path = assetId.path.startsWith('lib/')
@@ -249,7 +260,7 @@ class LibraryScanner {
               moduleClassName: moduleClassName,
               assetId: asset,
               directory: assetDir,
-              packageUri: assetToPackageUri(asset),
+              packageUri: assetToCqrsPackageUri(asset),
             );
             discoveredSubModules.add(module);
 

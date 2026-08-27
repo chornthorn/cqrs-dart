@@ -8,9 +8,9 @@
 // ignore_for_file: no_leading_underscores_for_library_prefixes, prefer_initializing_formals
 
 import 'package:cqrs/cqrs.dart' as _i1;
-import 'package:hello_world/features/notification/notification_handler.dart'
+import 'package:hello_world/features/notification/notification_handler.cqrs.dart'
     as _i2;
-import 'package:hello_world/features/user/user_handler.dart' as _i3;
+import 'package:hello_world/features/user/user_handler.cqrs.dart' as _i3;
 
 /// Generated [CqrsPackageModule] for auto-discovered CQRS handlers and sub-modules.
 ///

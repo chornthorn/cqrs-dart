@@ -24,6 +24,7 @@ void main() async {
         billingNotificationHandler: () => billingNotificationHandler,
       ),
       gatewayCqrsModule: const GatewayCqrsModule(),
+      thornDemoCqrsModule: const ThornDemoCqrsModule(),
       ordersCqrsModule: OrdersCqrsModule(
         placeOrderCommandHandler: () => PlaceOrderCommandHandler(
           repository: orderRepository,
