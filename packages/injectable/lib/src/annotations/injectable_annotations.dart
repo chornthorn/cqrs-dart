@@ -71,16 +71,8 @@ class FactoryMethod {
 /// Constant instance for [@factoryMethod] annotation.
 const factoryMethod = FactoryMethod();
 
-/// Marks a class as a module providing third-party dependencies via getters or methods.
-class Module {
-  const Module();
-}
-
-/// Constant instance for [@module] annotation.
-const module = Module();
-
-/// Marks a class as a third-party dependency provider module (alias for [Module]).
-class ThirdParty extends Module {
+/// Marks a class as a third-party dependency provider module.
+class ThirdParty {
   const ThirdParty();
 }
 

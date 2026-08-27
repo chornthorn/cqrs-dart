@@ -13,7 +13,6 @@ class DependencyParser {
   static const injectableChecker = TypeChecker.typeNamed(Injectable);
   static const singletonChecker = TypeChecker.typeNamed(Singleton);
   static const lazySingletonChecker = TypeChecker.typeNamed(LazySingleton);
-  static const moduleChecker = TypeChecker.typeNamed(Module);
   static const thirdPartyChecker = TypeChecker.typeNamed(ThirdParty);
   static const injectChecker = TypeChecker.typeNamed(Inject);
   static const factoryParamChecker = TypeChecker.typeNamed(FactoryParam);
@@ -24,10 +23,9 @@ class DependencyParser {
 
   /// Parses a class element into one or more [DependencyInfo] entries.
   List<DependencyInfo> parseClass(ClassElement element) {
-    if (moduleChecker.hasAnnotationOfExact(element) ||
-        thirdPartyChecker.hasAnnotationOfExact(element) ||
-        moduleChecker.hasAnnotationOf(element)) {
-      return _parseModule(element);
+    if (thirdPartyChecker.hasAnnotationOfExact(element) ||
+        thirdPartyChecker.hasAnnotationOf(element)) {
+      return _parseThirdParty(element);
     }
 
     final dependency = _parseInjectableClass(element);
@@ -84,7 +82,7 @@ class DependencyParser {
     );
   }
 
-  List<DependencyInfo> _parseModule(ClassElement element) {
+  List<DependencyInfo> _parseThirdParty(ClassElement element) {
     final list = <DependencyInfo>[];
     final moduleClassName = element.name ?? '';
     final moduleUri = ImportAliasRegistry.getLibraryUri(element);
