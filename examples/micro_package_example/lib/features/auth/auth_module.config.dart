@@ -31,8 +31,11 @@ class AuthInjectableModule extends _i1.MicroPackageModule {
     gh.factory<_i3.AuthApiClient>(() => _i3.AuthApiClient(gh<_i4.Dio>()));
     gh.lazySingleton<_i5.AuthRepository>(() => _i5.AuthRepository());
     gh.lazySingleton<_i6.AuthService>(
-      () =>
-          _i6.AuthService(gh<_i3.AuthApiClient>(), gh<_i7.AuthTokenStorage>()),
+      () => _i6.AuthService(
+        gh<_i3.AuthApiClient>(),
+        gh<_i5.AuthRepository>(),
+        gh<_i7.AuthTokenStorage>(),
+      ),
     );
     gh.singleton<_i7.AuthTokenStorage>(_i7.AuthTokenStorage());
   }

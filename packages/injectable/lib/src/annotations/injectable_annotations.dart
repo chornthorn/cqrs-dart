@@ -1,5 +1,20 @@
+/// Lifetime scope for injectable dependencies.
+enum Scope {
+  /// A new instance is created on every lookup.
+  factory,
+
+  /// A single shared instance created eagerly at initialization.
+  singleton,
+
+  /// A single shared instance created lazily upon first lookup.
+  lazySingleton,
+}
+
 /// Marks a class or factory method as a dependency eligible for injection.
 class Injectable {
+  /// The lifecycle scope (factory, singleton, lazySingleton).
+  final Scope scope;
+
   /// The type to bind this dependency to in the service locator.
   final Type? as;
 
@@ -9,18 +24,9 @@ class Injectable {
   /// The registration order priority.
   final int? order;
 
-  /// Optional locator scope.
-  final String? scope;
+  /// Optional GetIt scope name.
+  final String? getItScope;
 
-  /// Creates an [Injectable] annotation.
-  const Injectable({this.as, this.env, this.order, this.scope});
-}
-
-/// Constant instance for [@injectable] annotation.
-const injectable = Injectable();
-
-/// Marks a class or factory method as a eager singleton dependency.
-class Singleton extends Injectable {
   /// Whether this singleton signals ready when initialized.
   final bool? signalsReady;
 
@@ -30,38 +36,21 @@ class Singleton extends Injectable {
   /// Optional dispose callback function or method name.
   final Function? dispose;
 
-  /// Creates a [Singleton] annotation.
-  const Singleton({
-    super.as,
-    super.env,
-    super.order,
-    super.scope,
+  /// Creates an [Injectable] annotation.
+  const Injectable({
+    this.scope = Scope.factory,
+    this.as,
+    this.env,
+    this.order,
+    this.getItScope,
     this.signalsReady,
     this.dependsOn,
     this.dispose,
   });
 }
 
-/// Constant instance for [@singleton] annotation.
-const singleton = Singleton();
-
-/// Marks a class or factory method as a lazy singleton dependency.
-class LazySingleton extends Injectable {
-  /// Optional dispose callback function or method name.
-  final Function? dispose;
-
-  /// Creates a [LazySingleton] annotation.
-  const LazySingleton({
-    super.as,
-    super.env,
-    super.order,
-    super.scope,
-    this.dispose,
-  });
-}
-
-/// Constant instance for [@lazySingleton] annotation.
-const lazySingleton = LazySingleton();
+/// Constant instance for default factory [@injectable] annotation.
+const injectable = Injectable();
 
 /// Marks a constructor or static/top-level method as the factory method to instantiate a dependency.
 class FactoryMethod {

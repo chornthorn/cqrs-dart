@@ -4,7 +4,7 @@ import '../cart_service.dart';
 import 'models/order_summary.dart';
 import 'payment_gateway.dart';
 
-@lazySingleton
+@Injectable(scope: Scope.lazySingleton)
 class CheckoutService {
   final CartService _cartService;
   final PaymentGateway _paymentGateway;

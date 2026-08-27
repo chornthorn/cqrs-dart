@@ -1,7 +1,7 @@
 import 'package:hello_world/features/user/domain/entities/user.dart';
 import 'package:injectable/injectable.dart';
 
-@lazySingleton
+@Injectable(scope: Scope.lazySingleton)
 class UserRepository {
   final Map<String, User> _users = {};
   int _nextId = 123;

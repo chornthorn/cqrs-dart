@@ -1,6 +1,6 @@
 import 'package:injectable/injectable.dart';
 
-@lazySingleton
+@Injectable(scope: Scope.lazySingleton)
 class NotificationLog {
   final List<String> entries = [];
 

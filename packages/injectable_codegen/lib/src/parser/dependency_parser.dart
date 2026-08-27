@@ -11,8 +11,6 @@ class DependencyParser {
   const DependencyParser();
 
   static const injectableChecker = TypeChecker.typeNamed(Injectable);
-  static const singletonChecker = TypeChecker.typeNamed(Singleton);
-  static const lazySingletonChecker = TypeChecker.typeNamed(LazySingleton);
   static const thirdPartyChecker = TypeChecker.typeNamed(ThirdParty);
   static const injectChecker = TypeChecker.typeNamed(Inject);
   static const factoryParamChecker = TypeChecker.typeNamed(FactoryParam);
@@ -177,26 +175,30 @@ class DependencyParser {
   }
 
   ConstantReader? _getInjectableAnnotation(Element element) {
-    if (lazySingletonChecker.hasAnnotationOfExact(element)) {
-      return ConstantReader(
-          lazySingletonChecker.firstAnnotationOfExact(element));
-    }
-    if (singletonChecker.hasAnnotationOfExact(element)) {
-      return ConstantReader(singletonChecker.firstAnnotationOfExact(element));
-    }
     if (injectableChecker.hasAnnotationOfExact(element)) {
       return ConstantReader(injectableChecker.firstAnnotationOfExact(element));
     }
-    // Also check subtypes
     final ann = injectableChecker.firstAnnotationOf(element);
     if (ann != null) return ConstantReader(ann);
     return null;
   }
 
   DependencyKind _getDependencyKind(ConstantReader annotation) {
-    final typeName = annotation.objectValue.type?.element?.name ?? '';
-    if (typeName == 'Singleton') return DependencyKind.singleton;
-    if (typeName == 'LazySingleton') return DependencyKind.lazySingleton;
+    final scopeField = annotation.peek('scope');
+    if (scopeField != null && !scopeField.isNull) {
+      final scopeObj = scopeField.objectValue;
+      final enumName = scopeObj.variable?.name ??
+          scopeObj.getField('_name')?.toStringValue();
+      if (enumName == 'singleton') return DependencyKind.singleton;
+      if (enumName == 'lazySingleton') return DependencyKind.lazySingleton;
+      if (enumName == 'factory') return DependencyKind.factory;
+
+      final index = scopeObj.getField('index')?.toIntValue();
+      if (index == 1) return DependencyKind.singleton;
+      if (index == 2) return DependencyKind.lazySingleton;
+      if (index == 0) return DependencyKind.factory;
+    }
+
     return DependencyKind.factory;
   }
 

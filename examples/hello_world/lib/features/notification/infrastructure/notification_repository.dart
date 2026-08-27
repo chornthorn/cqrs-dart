@@ -1,7 +1,7 @@
 import 'package:hello_world/features/notification/domain/entities/app_notification.dart';
 import 'package:injectable/injectable.dart';
 
-@lazySingleton
+@Injectable(scope: Scope.lazySingleton)
 class NotificationRepository {
   final Map<String, AppNotification> _notifications = {};
   int _nextId = 1;

@@ -12,4 +12,18 @@ class CartItem {
   });
 
   double get totalPrice => unitPrice * quantity;
+
+  CartItem copyWith({
+    String? productId,
+    String? title,
+    double? unitPrice,
+    int? quantity,
+  }) {
+    return CartItem(
+      productId: productId ?? this.productId,
+      title: title ?? this.title,
+      unitPrice: unitPrice ?? this.unitPrice,
+      quantity: quantity ?? this.quantity,
+    );
+  }
 }

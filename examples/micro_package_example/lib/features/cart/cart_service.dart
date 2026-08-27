@@ -1,7 +1,8 @@
 import 'package:injectable/injectable.dart';
+
 import 'models/cart_item.dart';
 
-@lazySingleton
+@Injectable(scope: Scope.lazySingleton)
 class CartService {
   final List<CartItem> _items = [];
 
@@ -11,17 +12,26 @@ class CartService {
     required String productId,
     required String title,
     required double unitPrice,
-    int quantity = 1,
+    required int quantity,
   }) {
-    _items.add(CartItem(
-      productId: productId,
-      title: title,
-      unitPrice: unitPrice,
-      quantity: quantity,
-    ));
+    final existingIndex =
+        _items.indexWhere((item) => item.productId == productId);
+    if (existingIndex >= 0) {
+      final existing = _items[existingIndex];
+      _items[existingIndex] =
+          existing.copyWith(quantity: existing.quantity + quantity);
+    } else {
+      _items.add(CartItem(
+        productId: productId,
+        title: title,
+        unitPrice: unitPrice,
+        quantity: quantity,
+      ));
+    }
   }
 
-  double get subtotal => _items.fold(0.0, (sum, i) => sum + i.totalPrice);
+  double get subtotal =>
+      _items.fold(0.0, (sum, item) => sum + item.totalPrice);
 
   void clear() => _items.clear();
 }
