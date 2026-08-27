@@ -44,12 +44,13 @@ class CqrsGenerator extends Generator {
       if (!isGloballyEnabled) {
         return null;
       }
-      if (!config.generateInjectable) {
-        final isInjectableEnabled =
-            await scanner.isInjectableGloballyEnabled(buildStep);
-        if (isInjectableEnabled) {
-          config = config.copyWith(generateInjectable: true);
-        }
+    }
+
+    if (!config.generateInjectable) {
+      final isInjectableEnabled =
+          await scanner.isInjectableGloballyEnabled(buildStep);
+      if (isInjectableEnabled) {
+        config = config.copyWith(generateInjectable: true);
       }
     }
 

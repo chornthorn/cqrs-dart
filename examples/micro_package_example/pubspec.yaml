@@ -1,5 +1,5 @@
-name: hello_world
-description: Sample app showing how to write features against cqrs.
+name: micro_package_example
+description: Demonstrates folder-based nested micro-packages with injectable without dedicated pubspec.yaml files.
 publish_to: none
 version: 1.0.0
 
@@ -9,8 +9,7 @@ environment:
 resolution: workspace
 
 dependencies:
-  cqrs:
-  cqrs_codegen:
+  dio: ^5.8.0+1
   get_it: ^9.2.1
   injectable:
 

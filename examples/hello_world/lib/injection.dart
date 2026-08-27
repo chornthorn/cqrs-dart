@@ -1,5 +1,4 @@
 import 'package:cqrs/cqrs.dart';
-import 'package:get_it/get_it.dart';
 import 'package:hello_world/cqrs_init.dart';
 import 'package:injectable/injectable.dart';
 

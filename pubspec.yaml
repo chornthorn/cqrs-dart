@@ -8,9 +8,12 @@ environment:
 workspace:
   - packages/cqrs
   - packages/cqrs_codegen
+  - packages/injectable
+  - packages/injectable_codegen
   - examples/hello_world
   - examples/codegen_example
   - examples/pure_dart_example
+  - examples/micro_package_example
 
 melos:
   scripts:
