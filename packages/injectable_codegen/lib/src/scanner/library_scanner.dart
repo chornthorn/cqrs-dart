@@ -21,7 +21,7 @@ class LibraryScanner {
       asset.path.endsWith('.config.dart') ||
       asset.path.endsWith('.injectable.dart');
 
-  /// Checks whether `@InjectableInit` exists in `lib/**.dart` with `useMicroPackage: true`.
+  /// Checks whether root `@InjectableInit` exists in `lib/**.dart` with `useMicroPackage: true`.
   Future<bool> isMicroPackageGloballyEnabled(BuildStep buildStep) async {
     final allLibAssets =
         await buildStep.findAssets(Glob('lib/**.dart')).toList();
@@ -33,13 +33,17 @@ class LibraryScanner {
         final reader = LibraryReader(lib);
         final initAnnotated =
             reader.annotatedWith(AnnotationParser.initChecker);
-        if (initAnnotated.isNotEmpty) {
-          final ann = initAnnotated.first.annotation;
-          final useMicro = ann.peek('useMicroPackage')?.boolValue ?? false;
-          return useMicro;
+        for (final item in initAnnotated) {
+          final annTypeName =
+              item.annotation.objectValue.type?.element?.name ?? '';
+          if (annTypeName == 'InjectableInit') {
+            final useMicro =
+                item.annotation.peek('useMicroPackage')?.boolValue ?? false;
+            return useMicro;
+          }
         }
 
-        // Fallback AST inspection
+        // Fallback AST inspection for @InjectableInit
         final session = lib.session;
         final parsed = session.getParsedLibraryByElement(lib);
         if (parsed is ParsedLibraryResult) {
@@ -79,9 +83,7 @@ class LibraryScanner {
         final ann = annotated.first.annotation;
         final typeName = ann.objectValue.type?.element?.name ?? '';
         final bool isMicro = typeName == 'InjectableMicroPackage';
-        final bool useMicro =
-            ann.peek('useMicroPackage')?.boolValue ?? isMicro;
-        if (useMicro) {
+        if (isMicro) {
           final customClassName =
               ann.peek('moduleClassName')?.stringValue;
           if (customClassName != null && customClassName.isNotEmpty) {
@@ -105,21 +107,14 @@ class LibraryScanner {
           for (final decl in unit.unit.declarations) {
             for (final ann in decl.metadata) {
               final annName = ann.name.name;
-              if (annName == 'InjectableMicroPackage' ||
-                  annName == 'InjectableInit') {
-                bool isMicro = annName == 'InjectableMicroPackage';
+              if (annName == 'InjectableMicroPackage') {
                 String? modName;
                 String? customClass;
                 final args = ann.arguments?.arguments;
                 if (args != null) {
                   for (final arg in args) {
                     if (arg is NamedArgument) {
-                      if (arg.name.lexeme == 'useMicroPackage') {
-                        final expr = arg.argumentExpression;
-                        if (expr is BooleanLiteral) {
-                          isMicro = expr.value;
-                        }
-                      } else if (arg.name.lexeme == 'moduleName') {
+                      if (arg.name.lexeme == 'moduleName') {
                         modName = arg.argumentExpression
                             .toSource()
                             .replaceAll("'", '')
@@ -133,15 +128,13 @@ class LibraryScanner {
                     }
                   }
                 }
-                if (isMicro) {
-                  if (customClass != null && customClass.isNotEmpty) {
-                    return customClass;
-                  }
-                  if (modName != null && modName.isNotEmpty) {
-                    return '${_capitalize(modName)}InjectableModule';
-                  }
-                  return 'GeneratedInjectableModule';
+                if (customClass != null && customClass.isNotEmpty) {
+                  return customClass;
                 }
+                if (modName != null && modName.isNotEmpty) {
+                  return '${_capitalize(modName)}InjectableModule';
+                }
+                return 'GeneratedInjectableModule';
               }
             }
           }
@@ -182,7 +175,7 @@ class LibraryScanner {
     final excludedDirs = <String>{};
     final discoveredSubModules = <DiscoveredModule>[];
 
-    // 1. Discover micro-package boundaries
+    // 1. Discover micro-package boundaries only when micro-packages are active
     if (isRootCompositor || isMicroPackage) {
       for (final asset in allAssets) {
         if (asset == targetAsset || _isGenerated(asset)) continue;
@@ -201,6 +194,7 @@ class LibraryScanner {
             );
             discoveredSubModules.add(module);
 
+            // Exclude micro-package folders from parent scanning
             if (assetDir != targetDirPath) {
               excludedDirs.add(assetDir);
             }
@@ -268,7 +262,7 @@ class LibraryScanner {
 
     return ModuleScanResult(
       dependencies: dependencies,
-      subModules: discoveredSubModules,
+      subModules: isRootCompositor ? discoveredSubModules : const [],
       typeUris: typeUris,
     );
   }

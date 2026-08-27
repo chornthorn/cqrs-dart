@@ -2,6 +2,7 @@ import 'package:dio/dio.dart';
 import 'package:micro_package_example/features/auth/auth_api_client.dart';
 import 'package:micro_package_example/features/auth/auth_service.dart';
 import 'package:micro_package_example/features/cart/cart_service.dart';
+import 'package:micro_package_example/features/cart/checkout/checkout_service.dart';
 import 'package:micro_package_example/features/cart/discount_calculator.dart';
 import 'package:micro_package_example/features/catalog/catalog_api_client.dart';
 import 'package:micro_package_example/features/catalog/product_repository.dart';
@@ -11,7 +12,7 @@ void main() async {
   // ignore: avoid_print
   print('========================================================');
   // ignore: avoid_print
-  print('🎯 Injectable Micro-Package App Demo (with Dio)');
+  print('🎯 Injectable Nested Micro-Package Demo');
   // ignore: avoid_print
   print('========================================================');
 
@@ -21,29 +22,27 @@ void main() async {
   // 2. Demonstrate Dio injection
   final dio = getIt<Dio>();
   // ignore: avoid_print
-  print('\n🌐 0. Injected Dio Instance:');
+  print('\n🌐 0. Injected Dio Instance (from @thirdParty):');
   // ignore: avoid_print
   print('   Base URL: ${dio.options.baseUrl}');
   // ignore: avoid_print
   print('   Timeout:  ${dio.options.connectTimeout?.inSeconds}s');
-  // ignore: avoid_print
-  print('   Headers:  ${dio.options.headers}');
 
-  // 3. Resolve services from different folder-based micro-packages
+  // 3. Resolve services from top-level micro-packages
   final authApiClient = getIt<AuthApiClient>();
   final catalogApiClient = getIt<CatalogApiClient>();
   final authService = getIt<AuthService>();
   final productRepo = getIt<ProductRepository>();
   final cartService = getIt<CartService>();
 
-  // 4. Authenticate with Auth micro-package (uses injected Dio)
+  // 4. Authenticate with Auth micro-package
   // ignore: avoid_print
-  print('\n🔐 1. Auth Micro-Package (Dio baseUrl: ${authApiClient.baseUrl}):');
+  print('\n🔐 1. Auth Micro-Package (baseUrl: ${authApiClient.baseUrl}):');
   final loggedIn = await authService.login('alice@example.com', 'secret123');
   // ignore: avoid_print
   print('   User logged in: $loggedIn (Token: ${authService.currentToken})');
 
-  // 5. Browse products from Catalog micro-package (uses injected Dio)
+  // 5. Browse products from Catalog micro-package
   // ignore: avoid_print
   print('\n📦 2. Catalog Micro-Package (endpoint: ${catalogApiClient.endpointUrl}):');
   final products = productRepo.listAll();
@@ -71,14 +70,31 @@ void main() async {
   // ignore: avoid_print
   print('   Cart subtotal: \$${subtotal.toStringAsFixed(2)}');
 
-  // 7. Use parameterized factory from Cart micro-package
   final discountCalc =
       getIt.get<DiscountCalculator>(param1: 15.0); // 15% discount
   final finalTotal = discountCalc.applyDiscount(subtotal);
   // ignore: avoid_print
   print('   Total after 15% discount: \$${finalTotal.toStringAsFixed(2)}');
 
+  // 7. Resolve and execute from NESTED micro-package (features/cart/checkout)
+  // ignore: avoid_print
+  print('\n💳 4. Nested Micro-Package (features/cart/checkout):');
+  final checkoutService = getIt<CheckoutService>();
+  final orderSummary = await checkoutService.completeCheckout();
+  if (orderSummary != null) {
+    // ignore: avoid_print
+    print('   🎉 Order Completed!');
+    // ignore: avoid_print
+    print('   Order ID:   ${orderSummary.orderId}');
+    // ignore: avoid_print
+    print('   Amount:     \$${orderSummary.totalAmount.toStringAsFixed(2)}');
+    // ignore: avoid_print
+    print('   Status:     ${orderSummary.status}');
+    // ignore: avoid_print
+    print('   Cart items remaining: ${cartService.items.length}');
+  }
+
   // ignore: avoid_print
   print(
-      '\n✅ Dio injected and resolved seamlessly across all micro-packages!');
+      '\n✅ Hierarchical nested micro-packages initialized and working perfectly!');
 }

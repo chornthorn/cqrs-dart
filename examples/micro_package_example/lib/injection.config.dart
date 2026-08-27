@@ -20,10 +20,12 @@ import 'package:micro_package_example/features/auth/auth_module.config.dart'
     as _i3;
 import 'package:micro_package_example/features/cart/cart_module.config.dart'
     as _i4;
-import 'package:micro_package_example/features/catalog/catalog_module.config.dart'
+import 'package:micro_package_example/features/cart/checkout/checkout_module.config.dart'
     as _i5;
-import 'package:micro_package_example/core/third_party_module.dart' as _i6;
-import 'package:dio/src/dio.dart' as _i7;
+import 'package:micro_package_example/features/catalog/catalog_module.config.dart'
+    as _i6;
+import 'package:micro_package_example/core/third_party_module.dart' as _i7;
+import 'package:dio/src/dio.dart' as _i8;
 
 extension GetItInjectableX on _i2.GetIt {
   _i2.GetIt init({
@@ -37,14 +39,15 @@ extension GetItInjectableX on _i2.GetIt {
     );
     gh.initMicroPackage(_i3.AuthInjectableModule());
     gh.initMicroPackage(_i4.CartInjectableModule());
-    gh.initMicroPackage(_i5.CatalogInjectableModule());
+    gh.initMicroPackage(_i5.CheckoutInjectableModule());
+    gh.initMicroPackage(_i6.CatalogInjectableModule());
     final thirdPartyModule = _$ThirdPartyModule();
     gh.factory<String>(() => thirdPartyModule.baseUrl, instanceName: 'baseUrl');
-    gh.lazySingleton<_i7.Dio>(
+    gh.lazySingleton<_i8.Dio>(
       () => thirdPartyModule.dio(gh<String>(instanceName: 'baseUrl')),
     );
     return this;
   }
 }
 
-class _$ThirdPartyModule extends _i6.ThirdPartyModule {}
+class _$ThirdPartyModule extends _i7.ThirdPartyModule {}
