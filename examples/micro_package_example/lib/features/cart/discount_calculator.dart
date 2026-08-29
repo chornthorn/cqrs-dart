@@ -4,7 +4,7 @@ import 'package:injectable/injectable.dart';
 class DiscountCalculator {
   final double discountRate;
 
-  DiscountCalculator(@factoryParam this.discountRate);
+  DiscountCalculator(@FactoryParam() this.discountRate);
 
   double applyDiscount(double amount) =>
       amount * (1.0 - (discountRate / 100.0));

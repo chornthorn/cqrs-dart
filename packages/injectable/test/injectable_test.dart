@@ -1,4 +1,4 @@
-import 'package:injectable/injectable.dart' hide test;
+import 'package:injectable/injectable.dart';
 import 'package:test/test.dart';
 
 class ServiceA {

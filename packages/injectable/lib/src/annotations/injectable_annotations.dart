@@ -11,6 +11,12 @@ enum Scope {
 }
 
 /// Marks a class or factory method as a dependency eligible for injection.
+///
+/// Example:
+/// ```dart
+/// @Injectable()
+/// class AuthService {}
+/// ```
 class Injectable {
   /// The lifecycle scope (factory, singleton, lazySingleton).
   final Scope scope;
@@ -55,6 +61,12 @@ class FactoryMethod {
 }
 
 /// Marks a class as an external module dependency provider.
+///
+/// Example:
+/// ```dart
+/// @ExternalModule()
+/// abstract class ThirdPartyModule {}
+/// ```
 class ExternalModule {
   const ExternalModule();
 }
@@ -69,6 +81,3 @@ class Order {
 class PreResolve {
   const PreResolve();
 }
-
-/// Constant instance for [@preResolve] annotation.
-const preResolve = PreResolve();

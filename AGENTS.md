@@ -14,7 +14,7 @@
   - Root `@InjectableInit(useMicroPackage: true)` discovers and registers all micro-packages flatly at the root container.
   - No `useMicroPackage` parameter on `@InjectableMicroPackage`.
   - Use unified `@Injectable(scope: Scope.singleton | Scope.lazySingleton | Scope.factory)`.
-  - Use `@externalModule` for external provider modules and `@Inject('tag')` for qualifiers.
+  - Use `@ExternalModule()` for external provider modules and `@Inject('tag')` for qualifiers.
 - **CQRS Micro-Packages**:
   - `@CqrsMicroPackage(moduleName: 'Feature')` defines isolated CQRS boundaries.
   - Handlers and commands are organized cleanly with zero runtime overhead.

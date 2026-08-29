@@ -54,9 +54,6 @@ class InjectableInit {
   });
 }
 
-/// Constant instance for [@injectableInit] annotation.
-const injectableInit = InjectableInit();
-
 /// Annotation to mark a feature directory or sub-module as an isolated micro-package.
 ///
 /// Example:
@@ -78,6 +75,3 @@ class InjectableMicroPackage extends InjectableInit {
     super.allowMultipleRegistrations,
   }) : super.microPackage();
 }
-
-/// Constant instance for [@injectableMicroPackage] annotation.
-const injectableMicroPackage = InjectableMicroPackage();

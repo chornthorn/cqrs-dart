@@ -12,21 +12,12 @@ class FactoryParam {
   const FactoryParam();
 }
 
-/// Constant instance for [@factoryParam] annotation.
-const factoryParam = FactoryParam();
-
 /// Marks a method to be called when disposing of an instance.
 class DisposeMethod {
   const DisposeMethod();
 }
 
-/// Constant instance for [@disposeMethod] annotation.
-const disposeMethod = DisposeMethod();
-
 /// Marks a method to be executed immediately after the instance is created.
 class PostLocalInit {
   const PostLocalInit();
 }
-
-/// Constant instance for [@postLocalInit] annotation.
-const postLocalInit = PostLocalInit();

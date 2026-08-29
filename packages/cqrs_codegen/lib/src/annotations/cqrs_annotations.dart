@@ -82,9 +82,6 @@ class CqrsInit {
   final bool generateInjectable;
 }
 
-/// Constant instance for `@cqrsInit` annotation.
-const cqrsInit = CqrsInit();
-
 /// Alias for [CqrsInit.microPackage] to mark a micro-package / sub-module.
 ///
 /// Example:
@@ -106,14 +103,8 @@ class CqrsMicroPackage extends CqrsInit {
   }) : super.microPackage();
 }
 
-/// Constant instance for `@cqrsMicroPackage` annotation.
-const cqrsMicroPackage = CqrsMicroPackage();
-
 /// Optional annotation to explicitly mark a class as a CQRS handler.
 class CqrsHandler {
   /// Creates a [CqrsHandler] annotation.
   const CqrsHandler();
 }
-
-/// Constant instance for `@cqrsHandler` annotation.
-const cqrsHandler = CqrsHandler();

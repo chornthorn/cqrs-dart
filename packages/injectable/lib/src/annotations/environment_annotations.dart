@@ -15,12 +15,3 @@ class Environment {
   /// Predefined testing environment name.
   static const test = 'test';
 }
-
-/// Constant annotation for development environment.
-const dev = Environment(Environment.dev);
-
-/// Constant annotation for production environment.
-const prod = Environment(Environment.prod);
-
-/// Constant annotation for testing environment.
-const test = Environment(Environment.test);
