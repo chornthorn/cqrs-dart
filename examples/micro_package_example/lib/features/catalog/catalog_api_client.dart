@@ -1,7 +1,7 @@
 import 'package:dio/dio.dart';
 import 'package:injectable/injectable.dart';
 
-@injectable
+@Injectable()
 class CatalogApiClient {
   final Dio _dio;
 

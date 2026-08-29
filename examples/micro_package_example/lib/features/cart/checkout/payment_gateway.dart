@@ -1,6 +1,6 @@
 import 'package:injectable/injectable.dart';
 
-@injectable
+@Injectable()
 class PaymentGateway {
   Future<bool> processPayment(double amount) async {
     // Simulated payment processing

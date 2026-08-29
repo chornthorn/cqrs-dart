@@ -1,6 +1,6 @@
 import 'package:injectable/injectable.dart';
 
-@injectable
+@Injectable()
 class DiscountCalculator {
   final double discountRate;
 

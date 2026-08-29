@@ -1,7 +1,7 @@
-import 'package:injectable/injectable.dart';
 import 'package:cqrs/cqrs.dart';
 import 'package:hello_world/features/user/domain/entities/user.dart';
 import 'package:hello_world/features/user/infrastructure/user_repository.dart';
+import 'package:injectable/injectable.dart';
 
 class GetUserQuery extends Query<User?> {
   GetUserQuery(this.userId);
@@ -9,7 +9,7 @@ class GetUserQuery extends Query<User?> {
   final String userId;
 }
 
-@injectable
+@Injectable()
 class GetUserHandler implements QueryHandler<GetUserQuery, User?> {
   GetUserHandler(this._users);
 

@@ -3,7 +3,7 @@ import 'package:hello_world/features/notification/domain/events/notification_sen
 import 'package:hello_world/features/notification/infrastructure/notification_log.dart';
 import 'package:injectable/injectable.dart';
 
-@injectable
+@Injectable()
 class PushNotificationDeliveryHandler
     implements EventHandler<NotificationSentEvent> {
   PushNotificationDeliveryHandler(this._log);

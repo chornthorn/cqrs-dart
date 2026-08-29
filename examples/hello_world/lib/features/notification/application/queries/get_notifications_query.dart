@@ -9,7 +9,7 @@ class GetNotificationsQuery extends Query<List<AppNotification>> {
   final String recipientId;
 }
 
-@injectable
+@Injectable()
 class GetNotificationsHandler
     implements QueryHandler<GetNotificationsQuery, List<AppNotification>> {
   GetNotificationsHandler(this._repository);

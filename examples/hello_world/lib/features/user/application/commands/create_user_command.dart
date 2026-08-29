@@ -9,7 +9,7 @@ class CreateUserCommand extends Command<bool> {
   final String email;
 }
 
-@injectable
+@Injectable()
 class CreateUserHandler implements CommandHandler<CreateUserCommand, bool> {
   CreateUserHandler(this._dispatcher, this._users);
 

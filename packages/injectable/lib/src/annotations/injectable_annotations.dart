@@ -49,24 +49,15 @@ class Injectable {
   });
 }
 
-/// Constant instance for default factory [@injectable] annotation.
-const injectable = Injectable();
-
 /// Marks a constructor or static/top-level method as the factory method to instantiate a dependency.
 class FactoryMethod {
   const FactoryMethod();
 }
 
-/// Constant instance for [@factoryMethod] annotation.
-const factoryMethod = FactoryMethod();
-
 /// Marks a class as an external module dependency provider.
 class ExternalModule {
   const ExternalModule();
 }
-
-/// Constant instance for [@externalModule] annotation.
-const externalModule = ExternalModule();
 
 /// Specifies explicit registration order priority.
 class Order {
